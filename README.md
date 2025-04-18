@@ -1,4 +1,4 @@
-# MALL API
+# QUANG DA FOOD
 
 ### I. Công nghệ sử dụng
 
@@ -34,30 +34,6 @@ Tên file: .env
 
 Đường dẫn: ./src/env/.env
 Copy từ .env.example file vào .env
-
-```
-NODE_ENV=... // Môi trường development/testing/production
-HTTP_PORT=... // Port của dự án
-HOST=... // Host của dự án
-API_PREFIX=... // Tên prefix của api
-API_PREFIX_SCM=... // Tên prefix của scm api
-ENDPOINT=... // endpoint của api
-MONGO_HOST=... // Host của server mongodb
-MONGO_USERNAME=... // Username của server mongodb
-MONGO_PASSWORD=... // Password của server mongodb
-MONGO_DATABASE=... // Tên database
-CLOUD_STORAGE_NAME=... // Lấy trên trang cloudinary
-CLOUD_STORAGE_API_KEY=... // Lấy trên trang cloudinary
-CLOUD_STORAGE_API_SECRET=... // Lấy trên trang cloudinary
-HOST_WEB_USER=dev.retx.finance
-LOG_SIZE=...
-LOG_ROTATE=...
-LOG_LEVEL=...
-LOG_FOLDER=...
-LOG_TRANSPORT=...
-```
-
-> LƯU Ý: Các giá trị cho development và production nằm trong https://github.com/Asset-Tokenization/system_environment
 
 ### IV. Mô tả các module
 
@@ -146,17 +122,3 @@ LOG_TRANSPORT=...
     1.2 Mô tả:
 
     Chứa các function, biến dùng thường xuyên trong dự án
-
-### V. API Document
-
-1. Web user
-
-   [https://test.api.metadap.io/docs/web-user](https://test.api.metadap.io/docs/web-user)
-
-   [https://api.metadap.io/docs/web-user](https://api.metadap.io/docs/web-user)
-
-2. Web admin
-
-   [https://test.api.metadap.io/docs/web-admin](https://test.api.metadap.io/docs/web-admin)
-
-   [https://api.metadap.io/docs/web-admin](https://api.metadap.io/docs/web-admin)
