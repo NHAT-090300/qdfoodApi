@@ -1,0 +1,23 @@
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ['CI Pipeline']
+    types:
+      - completed
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - name: Pull Docker image
+        run: sudo docker pull nhatnguyen0903/real-estate-api:latest
+      - name: Delete Old docker container
+        run: sudo docker rm -f real-estate-api-container || true
+      - name: Run Docker Container
+        run: |
+          sudo docker run -d -p 8000:8000 \
+            --name real-estate-api-container \
+            -v /home/app/real-estate-api/.env:/home/app/.env \
+            nhatnguyen0903/real-estate-api
