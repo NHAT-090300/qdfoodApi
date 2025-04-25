@@ -77,27 +77,6 @@ export class MongoProduct extends BaseStore<IProduct> {
       condition.$or = [{ name: { $regex: regex } }];
     }
 
-    if (typeof filters.district === 'string' && !!filters.district) {
-      condition['address.city'] = {
-        $eq: filters.city,
-      };
-      condition['address.district'] = {
-        $eq: filters.district,
-      };
-    }
-
-    if (typeof filters.direction === 'string' && !!filters.direction) {
-      condition['address.direction'] = {
-        $eq: filters.direction,
-      };
-    }
-
-    if (typeof filters.category === 'string' && !!filters.category) {
-      condition.category = {
-        $eq: new ObjectId(filters.category),
-      };
-    }
-
     if (isNumber(filters.minPrice) || isNumber(filters.maxPrice)) {
       condition.price = {};
       if (isNumber(filters.minPrice)) {

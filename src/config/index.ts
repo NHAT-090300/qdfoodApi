@@ -5,9 +5,9 @@ dotenv.config();
 
 export const config: IConfig = {
   serviceSettings: {
-    serviceName: process.env.SERVICE_NAME || 'real-estate',
+    serviceName: process.env.SERVICE_NAME || 'qdfood',
     httpPort: parseInt(process.env.HTTP_PORT || '9000', 10),
-    apiPrefix: process.env.API_PREFIX || '/real-estate/api',
+    apiPrefix: process.env.API_PREFIX || '/qdfood/api',
     shouldSeedDb: process.env.SEED_DB === 'true',
   },
   mongoSettings: {
@@ -17,7 +17,7 @@ export const config: IConfig = {
     mongoPassword: process.env.MONGO_PASSWORD || '',
   },
   loggerSettings: {
-    serviceName: process.env.SERVICE_NAME || 'real-estate',
+    serviceName: process.env.SERVICE_NAME || 'qdfood',
     maxSize: process.env.LOG_SIZE || '25m',
     maxRotate: Number(process.env.LOG_ROTATE) || '30d',
     level: process.env.LOG_LEVEL || 'info',

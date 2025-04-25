@@ -17,6 +17,6 @@ jobs:
         run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
 
       - name: Build the Docker image
-        run: docker build -t nhatnguyen0903/real-estate-api .
+        run: docker build -t nhatnguyen0903/qdfood-api .
       - name: Push to Dockerhub
-        run: docker push nhatnguyen0903/real-estate-api:latest
+        run: docker push nhatnguyen0903/qdfood-api:latest
