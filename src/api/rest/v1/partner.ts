@@ -4,6 +4,7 @@ import { authentication } from '@api/middleware';
 import { ERole } from 'interface';
 
 export function initPartner(api: API) {
+  api.baseRoutes.partner.get('/list/web-user', api.handler(handlers.getAll));
   api.baseRoutes.partner.get(
     '/list',
     api.handler(authentication(ERole.USER)),

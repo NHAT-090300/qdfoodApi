@@ -36,7 +36,7 @@ export class Category implements ICategory {
     const schema = yup.object().shape({
       name: yup.string().required(),
       description: yup.string(),
-      image: yup.string().url().required(),
+      image: yup.string().required(),
       isDelete: yup.boolean(),
     });
 
