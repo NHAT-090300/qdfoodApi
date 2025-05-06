@@ -13,9 +13,10 @@ export class MongoSupplier extends BaseStore<ISupplier> {
   private getProject(custom: object = {}) {
     return {
       _id: 1,
-      title: 1,
-      url: 1,
-      image: 1,
+      name: 1,
+      addressInfo: 1,
+      phone: 1,
+      email: 1,
       createdAt: 1,
       updatedAt: 1,
       ...custom,

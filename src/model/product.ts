@@ -36,7 +36,7 @@ export class Product implements IProduct {
 
   static async sequelize(data: any) {
     const schema = yup.object().shape({
-      images: yup.array().of(yup.string().url().required()).required(),
+      images: yup.array().of(yup.string().required()).required(),
       name: yup.string().required(),
       description: yup.string(),
       categoryId: yup.string().objectId().required(),

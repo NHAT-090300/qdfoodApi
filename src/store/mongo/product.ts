@@ -44,17 +44,13 @@ export class MongoProduct extends BaseStore<IProduct> {
       _id: 1,
       name: 1,
       description: 1,
-      avatar: 1,
-      price: 1,
-      information: 1,
-      point: 1,
-      directions: 1,
+      images: 1,
+      defaultPrice: 1,
       createdAt: 1,
       updatedAt: 1,
-      address: 1,
-      acreage: 1,
+      addressInfo: 1,
       slug: 1,
-      categoryDetail: 1,
+      category: 1,
       ...custom,
     };
   }
@@ -127,14 +123,14 @@ export class MongoProduct extends BaseStore<IProduct> {
       {
         $lookup: {
           from: 'category',
-          localField: 'category',
+          localField: 'categoryId',
           foreignField: '_id',
-          as: 'categoryDetail',
+          as: 'category',
         },
       },
       {
         $unwind: {
-          path: '$categoryDetail',
+          path: '$category',
           preserveNullAndEmptyArrays: true,
         },
       },
@@ -195,21 +191,21 @@ export class MongoProduct extends BaseStore<IProduct> {
         {
           $lookup: {
             from: 'category',
-            localField: 'category',
+            localField: 'categoryId',
             foreignField: '_id',
-            as: 'categoryDetail',
+            as: 'category',
           },
         },
         {
           $unwind: {
-            path: '$categoryDetail',
+            path: '$category',
             preserveNullAndEmptyArrays: true,
           },
         },
         {
           $project: {
             ...this.getProject(),
-            category: { $ifNull: ['$categoryDetail', {}] },
+            category: { $ifNull: ['$category', {}] },
           },
         },
         {
