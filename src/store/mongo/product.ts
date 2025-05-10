@@ -46,6 +46,7 @@ export class MongoProduct extends BaseStore<IProduct> {
       description: 1,
       images: 1,
       defaultPrice: 1,
+      unitName: 1,
       createdAt: 1,
       updatedAt: 1,
       addressInfo: 1,

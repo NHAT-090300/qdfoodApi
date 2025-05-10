@@ -9,10 +9,10 @@ export interface IUser {
   password: string;
   phoneNumber?: string;
   address?: {
-    city: string;
-    district: string;
-    ward: string;
-    street: string;
+    city?: string;
+    district?: string;
+    ward?: string;
+    street?: string;
   };
   role?: ERole;
   isDelete?: boolean;

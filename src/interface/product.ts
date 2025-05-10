@@ -8,10 +8,28 @@ export interface IProduct {
   description?: string;
   categoryId: ObjectId;
   defaultPrice: number;
+  unitName: EUnit;
   suppliers?: ISupplierInfo[];
   slug?: string;
   createdAt?: Date;
   updatedAt?: Date;
+}
+
+export enum EUnit {
+  KG = 'kg',
+  G = 'gam',
+  L = 'lít',
+  ML = 'ml',
+  BOX = 'hộp',
+  PACK = 'gói',
+  BAG = 'túi',
+  BOTTLE = 'chai',
+  JAR = 'hũ',
+  TUBE = 'ống',
+  PIECE = 'cái',
+  PAIR = 'cặp',
+  CAN = 'lon',
+  BUNDLE = 'bó',
 }
 
 export interface ISupplierInfo {

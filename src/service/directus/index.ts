@@ -1,4 +1,3 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import {
   createDirectus,
   deleteFile,
@@ -13,14 +12,14 @@ import {
 import axios from 'axios';
 import FormData from 'form-data';
 import fs from 'fs';
-import FileType from 'file-type';
 
 import { DirectusData, FileUpload, IDirectusSettings } from 'interface';
-import { isValidFileExtension, removeFileLocal } from 'utils';
+import { removeFileLocal } from 'utils';
 
 export class DirectusService {
   private config: IDirectusSettings;
   private client: DirectusClient<any> & StaticTokenClient<any> & RestClient<any>;
+
   constructor(config: IDirectusSettings) {
     this.config = config;
     this.client = createDirectus(config.directusHost)
@@ -30,22 +29,11 @@ export class DirectusService {
 
   async uploadFile(file: Express.Multer.File) {
     try {
-      const fileType = await FileType.fromStream(fs.createReadStream(file.path));
-
-      if (!fileType) {
-        throw new Error('File không hợp lệ');
-      }
-
-      const filename = isValidFileExtension(file.filename)
-        ? file.filename
-        : `${file.filename}.${fileType?.ext}`;
-
       const formData = new FormData();
+
       formData.append('folder', this.config.folderCode);
-      formData.append('file', fs.createReadStream(file.path), {
-        filename,
-        contentType: file.mimetype,
-      });
+      formData.append('file', fs.createReadStream(file.path));
+
       const { data: result } = await axios.post<{
         data: DirectusData;
       }>(`${this.config.directusHost}/files`, formData, {
@@ -55,15 +43,14 @@ export class DirectusService {
       return {
         width: result.data.width,
         height: result.data.height,
-        fieldname: result.data.filename_disk,
+        fieldname: file.mimetype,
         originalname: result.data.filename_download,
         encoding: file.encoding,
-        mimetype: file.mimetype,
+        mimetype: result.data.type,
         path: `${this.config.directusHost}/assets/${result.data.id}/${result.data.filename_download}`,
-        size: file.size,
-        filename,
-        uploadDate: new Date(),
-      } as FileUpload;
+        size: result.data.filesize,
+        filename: file.filename,
+      };
     } finally {
       removeFileLocal(file.path);
     }
@@ -71,21 +58,9 @@ export class DirectusService {
 
   async patchFile(fileId: string, file: Express.Multer.File) {
     try {
-      const fileType = await FileType.fromStream(fs.createReadStream(file.path));
-
-      if (!fileType) {
-        throw new Error('File không hợp lệ');
-      }
-
-      const filename = isValidFileExtension(file.filename)
-        ? file.filename
-        : `${file.filename}.${fileType?.ext}`;
-
       const formData = new FormData();
-      formData.append('file', fs.createReadStream(file.path), {
-        filename,
-        contentType: file.mimetype,
-      });
+      formData.append('file', fs.createReadStream(file.path));
+
       const { data: result } = await axios.patch<{
         data: DirectusData;
       }>(`${this.config.directusHost}/files/${fileId}`, formData, {
@@ -101,7 +76,7 @@ export class DirectusService {
         mimetype: file.mimetype,
         path: `${this.config.directusHost}/assets/${result.data.id}/${result.data.filename_download}`,
         size: file.size,
-        filename,
+        filename: file.filename,
         uploadDate: new Date(),
       } as FileUpload;
     } finally {

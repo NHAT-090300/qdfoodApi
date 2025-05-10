@@ -4,7 +4,7 @@ import * as yup from 'yup';
 import slugify from 'slugify';
 import { v1 as uuidv1 } from 'uuid';
 
-import { IProduct, ISupplierInfo } from 'interface';
+import { EUnit, IProduct, ISupplierInfo } from 'interface';
 import { invalidInformation, validateWithYup } from 'utils';
 
 const where = 'model.product';
@@ -16,6 +16,7 @@ export class Product implements IProduct {
   description?: string;
   categoryId: ObjectId;
   defaultPrice: number;
+  unitName: EUnit;
   suppliers?: ISupplierInfo[];
   slug?: string;
   createdAt?: Date;
@@ -28,6 +29,7 @@ export class Product implements IProduct {
     this.description = data.description;
     this.categoryId = data.categoryId;
     this.defaultPrice = data.defaultPrice || 0;
+    this.unitName = data.unitName;
     this.suppliers = data.suppliers ?? [];
     this.slug = data.slug;
     this.createdAt = data.createdAt;
@@ -41,6 +43,7 @@ export class Product implements IProduct {
       description: yup.string(),
       categoryId: yup.string().objectId().required(),
       defaultPrice: yup.number().required().default(0),
+      unitName: yup.string().oneOf(Object.values(EUnit)).required(),
       suppliers: yup.array().of(
         yup.object().shape({
           supplierId: yup.string().objectId().required(),

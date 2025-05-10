@@ -15,10 +15,10 @@ export class User implements IUser {
   phoneNumber: string;
   password: string;
   address?: {
-    city: string;
-    district: string;
-    ward: string;
-    street: string;
+    city?: string;
+    district?: string;
+    ward?: string;
+    street?: string;
   };
   role?: ERole;
   isDelete: boolean;
@@ -49,10 +49,10 @@ export class User implements IUser {
       password: yup.string().required('Password is required'),
       phoneNumber: yup.string().default(''),
       address: yup.object().shape({
-        street: yup.string().required('Street is required'),
-        ward: yup.string().required('Ward is required'),
-        district: yup.string().required('District is required'),
-        city: yup.string().required('City is required'),
+        street: yup.string(),
+        ward: yup.string(),
+        district: yup.string(),
+        city: yup.string(),
       }),
     });
 
@@ -73,10 +73,10 @@ export class User implements IUser {
       role: yup.string().oneOf(Object.values(ERole), 'Role invalid'),
       phoneNumber: yup.string(),
       address: yup.object().shape({
-        street: yup.string().required('Street is required'),
-        ward: yup.string().required('Ward is required'),
-        district: yup.string().required('District is required'),
-        city: yup.string().required('City is required'),
+        street: yup.string(),
+        ward: yup.string(),
+        district: yup.string(),
+        city: yup.string(),
       }),
     });
 
