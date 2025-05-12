@@ -69,9 +69,19 @@ export class MongoProduct extends BaseStore<IProduct> {
       hasPaginate: false,
     };
 
-    if (filters.keyword) {
+    if (filters.keyword && ObjectId.isValid(filters.keyword)) {
+      condition._id = new ObjectId(filters.keyword);
+    }
+
+    if (filters.keyword && !ObjectId.isValid(filters?.keyword)) {
       const regex = new RegExp(escapeRegExp(filters.keyword), 'i');
       condition.$or = [{ name: { $regex: regex } }];
+    }
+
+    if (filters.ninProduct?.length && Array.isArray(filters?.ninProduct)) {
+      condition._id = {
+        $nin: filters.ninProduct.map((id) => (ObjectId.isValid(id) ? new ObjectId(id) : id)),
+      };
     }
 
     if (isNumber(filters.minPrice) || isNumber(filters.maxPrice)) {
@@ -229,6 +239,86 @@ export class MongoProduct extends BaseStore<IProduct> {
         page: paginate.page,
         totalPages: Math.ceil(totalData / paginate.limit),
         totalItems: totalData,
+      },
+    };
+  }
+
+  async getPaginateProductPrice(filters: IProductFilter, userId: string) {
+    const { condition, sort, paginate } = this.getQuery(filters);
+
+    const userProductIds = await this.collection
+      .aggregate([
+        {
+          $match: {
+            userId: new ObjectId(userId),
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            productIds: { $addToSet: '$productId' },
+          },
+        },
+      ])
+      .next();
+
+    const productIds = userProductIds ? userProductIds.productIds : [];
+
+    // Bước 2: Truy vấn sản phẩm với điều kiện lọc và phân trang
+    const result = await this.collection
+      .aggregate<{ data: IProduct[]; pageInfo: Array<{ count: number }> }>([
+        {
+          $match: {
+            ...condition,
+            productId: { $nin: productIds },
+          },
+        },
+        {
+          $sort: sort,
+        },
+        {
+          $lookup: {
+            from: 'category', // Nối với bảng category
+            localField: 'categoryId',
+            foreignField: '_id',
+            as: 'category',
+          },
+        },
+        {
+          $unwind: {
+            path: '$category', // Tách dữ liệu category ra (nếu có)
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $project: {
+            ...this.getProject(), // Các trường bạn cần lấy từ sản phẩm
+            category: { $ifNull: ['$category', {}] }, // Xử lý trường category null
+          },
+        },
+        {
+          $facet: {
+            data: [
+              { $skip: paginate.limit * (paginate.page - 1) }, // Bỏ qua số lượng sản phẩm đã có
+              { $limit: paginate.limit }, // Giới hạn số lượng sản phẩm trả về
+            ],
+            pageInfo: [{ $count: 'count' }], // Tính tổng số bản ghi
+          },
+        },
+      ])
+      .next();
+
+    const data = result?.data ?? [];
+    const totalData = result?.pageInfo[0]?.count ?? 0;
+
+    return {
+      data,
+      totalData,
+      pagination: {
+        limit: paginate.limit,
+        page: paginate.page,
+        totalPages: Math.ceil(totalData / paginate.limit), // Tính tổng số trang
+        totalItems: totalData, // Tổng số sản phẩm
       },
     };
   }
