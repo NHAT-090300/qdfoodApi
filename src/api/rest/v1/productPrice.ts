@@ -12,7 +12,7 @@ export function initProductPrice(api: API) {
   api.baseRoutes.productPrice.get(
     '/',
     api.handler(authentication(ERole.USER)),
-    api.handler(handlers.getPagination),
+    api.handler(handlers.getPaginateAdmin),
   );
   api.baseRoutes.productPrice.get(
     '/:id',
@@ -24,13 +24,18 @@ export function initProductPrice(api: API) {
     api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.createProductPrice),
   );
+  api.baseRoutes.productPrice.post(
+    '/bulk-create',
+    api.handler(authentication(ERole.ADMIN)),
+    api.handler(handlers.bulkCreateProductPrice),
+  );
   api.baseRoutes.productPrice.put(
     '/:id',
     api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.updateProductPrice),
   );
   api.baseRoutes.productPrice.delete(
-    '/delete/:id',
+    '/:id',
     api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.deleteProductPrice),
   );

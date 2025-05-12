@@ -40,6 +40,10 @@ export class MongoProductPrice extends BaseStore<IProductPrice> {
       condition.$or = [{ name: { $regex: regex } }];
     }
 
+    if (filters?.userId && ObjectId.isValid(filters?.userId)) {
+      condition.userId = new ObjectId(filters?.userId);
+    }
+
     if (Array.isArray(filters.ids) && filters.ids.length) {
       condition._id = {
         $in: filters.ids.map((id) => (ObjectId.isValid(id) ? new ObjectId(id) : id)),
@@ -62,18 +66,62 @@ export class MongoProductPrice extends BaseStore<IProductPrice> {
     return { condition, sort, paginate };
   }
 
-  async getPaginate(filters: IProductPriceFilter) {
+  async getUserProductIds(userId: string) {
+    const result = await this.collection
+      .aggregate([
+        {
+          $match: {
+            userId: new ObjectId(userId),
+          },
+        },
+        {
+          $group: {
+            _id: '$userId',
+            productIds: { $push: '$productId' },
+          },
+        },
+        {
+          $project: {
+            userId: '$_id',
+            productIds: 1,
+            _id: 0,
+          },
+        },
+      ])
+      .next();
+
+    return result ? result.productIds.map((item: any) => item?.toString()) : [];
+  }
+
+  async getPaginateAdmin(filters: IProductPriceFilter) {
     const { condition, sort, paginate } = this.getQuery(filters);
 
+    const productIds = await this.getUserProductIds(condition?.userId);
+
     const result = await this.collection
-      .aggregate<{ data: IProductPrice[]; pageInfo: Array<{ count: number }> }>([
+      .aggregate<{ data: any[]; pageInfo: Array<{ count: number }> }>([
+        { $match: condition },
         {
-          $match: condition,
+          $lookup: {
+            from: 'product',
+            localField: 'productId',
+            foreignField: '_id',
+            as: 'product',
+          },
         },
         {
-          $sort: sort,
+          $addFields: {
+            product: { $arrayElemAt: ['$product', 0] },
+          },
         },
-        { $project: this.getProject() },
+        {
+          $replaceRoot: {
+            newRoot: {
+              $mergeObjects: ['$product', '$$ROOT'],
+            },
+          },
+        },
+        { $sort: sort },
         {
           $facet: {
             data: [{ $skip: paginate.limit * (paginate.page - 1) }, { $limit: paginate.limit }],
@@ -84,6 +132,7 @@ export class MongoProductPrice extends BaseStore<IProductPrice> {
       .next();
 
     const data = result?.data ?? [];
+
     const totalData = result?.pageInfo[0]?.count ?? 0;
 
     return {
@@ -95,6 +144,7 @@ export class MongoProductPrice extends BaseStore<IProductPrice> {
         totalPages: Math.ceil(totalData / paginate.limit),
         totalItems: totalData,
       },
+      productIds,
     };
   }
 
@@ -124,5 +174,17 @@ export class MongoProductPrice extends BaseStore<IProductPrice> {
     await this.baseUpdate({ _id: new ObjectId(id) }, { $set: data }, { session });
     data._id = new ObjectId(id);
     return data;
+  }
+
+  async bulkProductPrice(userId: string, productIds: string[]) {
+    const userObjectId = new ObjectId(userId);
+
+    const docs = productIds?.map((pro) => ({
+      userId: userObjectId,
+      productId: new ObjectId(pro),
+      customPrice: 0,
+    }));
+
+    return await this.collection.insertMany(docs);
   }
 }

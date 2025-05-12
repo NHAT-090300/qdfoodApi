@@ -17,4 +17,5 @@ export interface IProductPriceFilter {
   limit?: number;
   sort?: string;
   order?: ESortOrder;
+  userId?: string;
 }

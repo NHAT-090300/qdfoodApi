@@ -6,6 +6,7 @@ import { ProductPriceApp } from 'app';
 import { IProductPriceFilter } from 'interface';
 import { AppError, ProductPrice } from 'model';
 import { isValidId, tryParseJson, validatePagination } from 'utils';
+import { ObjectId } from 'mongodb';
 
 const where = 'Handlers.productPrice';
 
@@ -26,7 +27,35 @@ export async function createProductPrice(
   }
 }
 
-export async function getPagination(
+export async function bulkCreateProductPrice(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { userId, productIds } = req.body;
+
+    if (
+      !ObjectId.isValid(userId) ||
+      !Array.isArray(productIds) ||
+      !productIds.every((item) => ObjectId.isValid(item))
+    ) {
+      throw new AppError({
+        id: 'productPrice.bulkCreateProductPrice',
+        message: 'userId hoặc danh sách productId không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+    await new ProductPriceApp(ctx).bulkCreateProductPrice(userId, productIds);
+
+    res.json('ok');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getPaginateAdmin(
   ctx: Context,
   req: Request,
   res: Response,
@@ -46,7 +75,7 @@ export async function getPagination(
 
     validatePagination(filters.page, filters.limit);
 
-    const result = await new ProductPriceApp(ctx).getPaginate(filters);
+    const result = await new ProductPriceApp(ctx).getPaginateAdmin(filters);
 
     res.json(result);
   } catch (err) {

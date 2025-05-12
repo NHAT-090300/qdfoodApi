@@ -1,7 +1,7 @@
 import { escapeRegExp, isNumber } from 'lodash';
 import { ClientSession, Db, ObjectId } from 'mongodb';
 
-import { ESortOrder, IUser, IUserFilter } from 'interface';
+import { ERole, ESortOrder, IUser, IUserFilter } from 'interface';
 import { User } from 'model';
 import { BaseStore } from './base';
 
@@ -42,7 +42,11 @@ export class MongoUser extends BaseStore<IUser> {
       condition.$or = [{ name: { $regex: regex }, email: { $regex: regex } }];
     }
 
-    if (Array.isArray(filters.role) && filters.role.length) {
+    if (
+      Array.isArray(filters.role) &&
+      filters.role.length &&
+      filters?.role?.every((item) => Object.values(ERole).includes(item))
+    ) {
       condition.role = {
         $in: filters.role,
       };

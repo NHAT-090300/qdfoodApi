@@ -8,9 +8,9 @@ import BaseApp from './base';
 const where = 'App.productPrice';
 
 export class ProductPriceApp extends BaseApp {
-  async getPaginate(filters: IProductPriceFilter) {
+  async getPaginateAdmin(filters: IProductPriceFilter) {
     try {
-      const result = await this.getStore().productPrice().getPaginate(filters);
+      const result = await this.getStore().productPrice().getPaginateAdmin(filters);
 
       return result;
     } catch (error: any) {
@@ -23,6 +23,18 @@ export class ProductPriceApp extends BaseApp {
     }
   }
 
+  async bulkCreateProductPrice(userId: string, productIds: string[]) {
+    try {
+      return this.getStore().productPrice().bulkProductPrice(userId, productIds);
+    } catch (error: any) {
+      throw new AppError({
+        id: `${where}.getPaginate`,
+        message: 'Lấy danh sách productPrice thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
   async getList(filters: IProductPriceFilter) {
     try {
       return await this.getStore().productPrice().getList(filters);

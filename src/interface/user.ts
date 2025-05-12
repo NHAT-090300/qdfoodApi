@@ -29,7 +29,7 @@ export interface ISocial {
 
 export interface IUserFilter {
   keyword?: string;
-  role?: object;
+  role?: ERole;
   isDelete?: object;
   page?: number;
   limit?: number;
