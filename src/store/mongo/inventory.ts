@@ -71,9 +71,34 @@ export class MongoInventory extends BaseStore<IInventory> {
           $match: condition,
         },
         {
+          $lookup: {
+            from: 'product',
+            localField: 'productId',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        {
+          $lookup: {
+            from: 'suppliers',
+            localField: 'supplierId',
+            foreignField: '_id',
+            as: 'supplier',
+          },
+        },
+        {
+          $addFields: {
+            product: {
+              $arrayElemAt: ['$product', 0],
+            },
+            supplier: {
+              $arrayElemAt: ['$supplier', 0],
+            },
+          },
+        },
+        {
           $sort: sort,
         },
-        { $project: this.getProject() },
         {
           $facet: {
             data: [{ $skip: paginate.limit * (paginate.page - 1) }, { $limit: paginate.limit }],

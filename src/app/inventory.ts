@@ -63,6 +63,20 @@ export class InventoryApp extends BaseApp {
 
   async create(data: Inventory) {
     try {
+      const isExist = await this.getStore()
+        .inventory()
+        .findOne({
+          productId: new ObjectId(data?.productId),
+          supplierId: new ObjectId(data?.supplierId),
+        });
+
+      if (isExist) {
+        throw new AppError({
+          id: `${where}.create`,
+          message: 'Sản phẩm đã tồn tại',
+          statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        });
+      }
       const result = await this.getStore().inventory().createOne(data);
 
       return result;
