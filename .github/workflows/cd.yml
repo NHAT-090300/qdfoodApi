@@ -7,17 +7,18 @@ on:
       - completed
 
 jobs:
-  build:
+  deploy:
     runs-on: self-hosted
 
     steps:
       - name: Pull Docker image
         run: sudo docker pull nhatnguyen0903/qdfood-api:latest
-      - name: Delete Old docker container
+
+      - name: Delete old Docker container
         run: sudo docker rm -f qdfood-api-container || true
-      - name: Run Docker Container
+
+      - name: Run Docker container
         run: |
           sudo docker run -d -p 8000:8000 \
             --name qdfood-api-container \
-            -v /home/app/qdfood-api/.env:/home/app/.env \
             nhatnguyen0903/qdfood-api
