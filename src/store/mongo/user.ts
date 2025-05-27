@@ -125,7 +125,13 @@ export class MongoUser extends BaseStore<IUser> {
 
   async getOne(filters: IUserFilter) {
     const { condition } = this.getQuery(filters);
-    return this.collection.findOne<IUser>(condition, { projection: this.getProject() });
+    return this.collection.findOne<IUser>(condition, {
+      projection: this.getProject({
+        otp: 1,
+        otpExpiresAt: 1,
+        isVerified: 1,
+      }),
+    });
   }
 
   async createOne(data: User, session?: ClientSession) {

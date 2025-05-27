@@ -16,6 +16,9 @@ export interface IUser {
   };
   role?: ERole;
   isDelete?: boolean;
+  otp?: string;
+  otpExpiresAt?: Date;
+  isVerified?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
   deletedAt?: Date;
@@ -37,4 +40,7 @@ export interface IUserFilter {
   order?: ESortOrder;
 }
 
-export type TUserUpdate = Pick<IUser, 'name' | 'email' | 'phoneNumber' | 'avatar'>;
+export type TUserUpdate = Pick<
+  IUser,
+  'name' | 'email' | 'phoneNumber' | 'avatar' | 'address' | 'otp' | 'otpExpiresAt' | 'isVerified'
+>;

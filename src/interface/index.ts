@@ -16,3 +16,4 @@ export * from './productPrice';
 export * from './inventory';
 export * from './order';
 export * from './inventoryTransaction';
+export * from './otp';

@@ -18,6 +18,7 @@ import {
   MongoOrder,
   MongoInventory,
   MongoInventoryTransaction,
+  MongoOtp,
 } from './mongo';
 
 const DB_PING_ATTEMPTS = 5;
@@ -38,6 +39,7 @@ class MongoStores {
   order?: MongoOrder;
   inventory?: MongoInventory;
   inventoryTransaction?: MongoInventoryTransaction;
+  otp?: MongoOtp;
 }
 
 export default class MongoStore {
@@ -100,6 +102,7 @@ export default class MongoStore {
       this.stores.order = new MongoOrder(this.db);
       this.stores.inventory = new MongoInventory(this.db);
       this.stores.inventoryTransaction = new MongoInventoryTransaction(this.db);
+      this.stores.otp = new MongoOtp(this.db);
     }
   };
 
@@ -157,6 +160,13 @@ export default class MongoStore {
       throw new Error('User Store is not setup yet');
     }
     return this.stores.user;
+  }
+
+  otp() {
+    if (!this.stores.otp) {
+      throw new Error('Otp Store is not setup yet');
+    }
+    return this.stores.otp;
   }
 
   news() {

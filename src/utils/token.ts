@@ -2,10 +2,10 @@ import jwt from 'jsonwebtoken';
 import { config } from '@config/index';
 import { AppError } from '@model/index';
 
-const generateJWT = function (payload: object = {}): string {
+const generateJWT = function (payload: object = {}, expiresIn: string = '6h'): string {
   const privateKey: string = config.jwtSettings.jwtSecret;
   const defaultOptions: object = {
-    expiresIn: '6h',
+    expiresIn,
   };
 
   return jwt.sign(payload, privateKey, defaultOptions);

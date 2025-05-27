@@ -68,7 +68,7 @@ export class User implements IUser {
   static async validateUpdate(data: any) {
     const schema = yup.object().shape({
       name: yup.string().required('Name is required'),
-      email: yup.string().required('Email is required'),
+      email: yup.string().email('Email is invalid').required('Email is required'),
       avatar: yup.string().required('Avatar is required'),
       role: yup.string().oneOf(Object.values(ERole), 'Role invalid'),
       phoneNumber: yup.string(),

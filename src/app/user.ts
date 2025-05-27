@@ -131,6 +131,37 @@ export class UserApp extends BaseApp {
     }
   }
 
+  async updatePassword(
+    id: string,
+    data: {
+      password: string;
+    },
+  ) {
+    try {
+      const oldUser = await this.getById(id);
+
+      const newData = new User({
+        ...oldUser,
+        ...data,
+      });
+
+      const result = await this.getStore().user().updateOne(id, newData);
+
+      if (oldUser?.avatar !== result?.avatar) {
+        this.getServices().cloudinary.deleteByPaths([oldUser?.avatar as string]);
+      }
+
+      return result;
+    } catch (error: any) {
+      throw new AppError({
+        id: `${where}.update`,
+        message: 'Cập nhật user thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+
   async delete(id: string) {
     try {
       const oldUser = await this.getById(id);
