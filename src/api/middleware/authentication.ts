@@ -65,11 +65,15 @@ export const authentication = (type: ERole) => {
         );
       }
 
-      if ((type === ERole?.ADMIN || type === ERole?.SUPPER) && user?.role === ERole.USER) {
+      const roleHierarchy = [ERole.USER, ERole.ADMIN, ERole.SUPPER];
+      const userRoleIndex = roleHierarchy.indexOf(user.role || ERole.USER);
+      const requiredRoleIndex = roleHierarchy.indexOf(type);
+
+      if (userRoleIndex < requiredRoleIndex) {
         return next(
           new AppError({
-            id: 'access_token.verify',
-            message: 'Insufficient User Permissions',
+            id: 'auth.permission_denied',
+            message: 'Không có quyền truy cập',
             statusCode: StatusCodes.FORBIDDEN,
           }),
         );

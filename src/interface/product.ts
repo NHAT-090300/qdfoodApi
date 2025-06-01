@@ -10,6 +10,7 @@ export interface IProduct {
   defaultPrice: number;
   unitName: EUnit;
   suppliers?: ISupplierInfo[];
+  isRetailAvailable?: boolean;
   slug?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -18,19 +19,36 @@ export interface IProduct {
 export enum EUnit {
   KG = 'kg',
   G = 'gam',
-  L = 'lít',
+  L = 'l',
   ML = 'ml',
-  BOX = 'hộp',
-  PACK = 'gói',
-  BAG = 'túi',
-  BOTTLE = 'chai',
-  JAR = 'hũ',
-  TUBE = 'ống',
-  PIECE = 'cái',
-  PAIR = 'cặp',
-  CAN = 'lon',
-  BUNDLE = 'bó',
+  BOX = 'box',
+  PACK = 'pack',
+  BAG = 'bag',
+  BOTTLE = 'bottle',
+  JAR = 'jar',
+  TUBE = 'tube',
+  PIECE = 'piece',
+  PAIR = 'pair',
+  CAN = 'can',
+  BUNDLE = 'bundle',
 }
+
+export const EUnitDisplay: Record<EUnit, string> = {
+  [EUnit.KG]: 'kg',
+  [EUnit.G]: 'gam',
+  [EUnit.L]: 'lít',
+  [EUnit.ML]: 'ml',
+  [EUnit.BOX]: 'hộp',
+  [EUnit.PACK]: 'gói',
+  [EUnit.BAG]: 'túi',
+  [EUnit.BOTTLE]: 'chai',
+  [EUnit.JAR]: 'hũ',
+  [EUnit.TUBE]: 'ống',
+  [EUnit.PIECE]: 'cái',
+  [EUnit.PAIR]: 'cặp',
+  [EUnit.CAN]: 'lon',
+  [EUnit.BUNDLE]: 'bó',
+};
 
 export interface ISupplierInfo {
   supplierId: ObjectId;
@@ -53,4 +71,5 @@ export interface IProductFilter {
   direction?: string;
   category?: string;
   ninProduct?: string[];
+  userId?: string;
 }

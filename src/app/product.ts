@@ -23,14 +23,29 @@ export class ProductApp extends BaseApp {
     }
   }
 
-  async getMore(filters: IProductFilter) {
+  async getListMoreByUser(filters: IProductFilter) {
     try {
-      const result = await this.getStore().product().getMore(filters);
+      const result = await this.getStore().product().getListMoreByUser(filters);
 
       return result;
     } catch (error: any) {
       throw new AppError({
-        id: `${where}.getPaginate`,
+        id: `${where}.getListMoreByUser`,
+        message: 'Lấy danh sách product thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+
+  async getRandomProduct(filters: IProductFilter) {
+    try {
+      const result = await this.getStore().product().getRandomProduct(filters);
+
+      return result;
+    } catch (error: any) {
+      throw new AppError({
+        id: `${where}.getRandomProduct`,
         message: 'Lấy danh sách product thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         detail: error,

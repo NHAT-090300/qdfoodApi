@@ -116,20 +116,58 @@ export class MongoProduct extends BaseStore<IProduct> {
     return { condition, sort, paginate };
   }
 
-  async getMore(filters: IProductFilter) {
+  async getListMoreByUser(filters: IProductFilter) {
     const { condition, sort, paginate } = this.getQuery(filters);
 
-    // Construct the aggregation pipeline
     const pipeline: any[] = [{ $match: condition }];
 
-    // Add random sampling if no sorting is specified
-    if (!filters.sort) {
-      pipeline.push({ $sample: { size: paginate.limit } });
+    pipeline.push({ $sort: sort || { 'category.name': 1 } });
+
+    // Nếu có userId thì thêm lookup để lấy giá theo user
+    if (filters?.userId) {
+      pipeline.push(
+        {
+          $lookup: {
+            from: 'product_prices',
+            let: { productId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$productId', '$$productId'] },
+                      { $eq: ['$userId', new ObjectId(filters.userId)] },
+                    ],
+                  },
+                },
+              },
+              { $limit: 1 },
+            ],
+            as: 'customPriceData',
+          },
+        },
+        {
+          $addFields: {
+            finalPrice: {
+              $cond: [
+                { $gt: [{ $size: '$customPriceData' }, 0] },
+                { $arrayElemAt: ['$customPriceData.customPrice', 0] },
+                '$defaultPrice',
+              ],
+            },
+          },
+        },
+      );
     } else {
-      pipeline.push({ $sort: sort });
+      // Nếu không có userId thì lấy finalPrice = defaultPrice
+      pipeline.push({
+        $addFields: {
+          finalPrice: '$defaultPrice',
+        },
+      });
     }
 
-    // Join with categories
+    // Join category
     pipeline.push(
       {
         $lookup: {
@@ -149,6 +187,114 @@ export class MongoProduct extends BaseStore<IProduct> {
         $project: {
           ...this.getProject(),
           category: { $ifNull: ['$category', {}] },
+          finalPrice: 1,
+        },
+      },
+    );
+
+    // Pagination
+    pipeline.push({
+      $facet: {
+        data: [{ $skip: paginate.skip }, { $limit: paginate.limit }],
+        pageInfo: [{ $count: 'count' }],
+      },
+    });
+
+    const result = await this.collection.aggregate(pipeline).next();
+
+    const data = result?.data ?? [];
+    const totalData = result?.pageInfo[0]?.count ?? 0;
+
+    return {
+      data,
+      totalData,
+      pagination: {
+        limit: paginate.limit,
+        page: paginate.page,
+        totalPages: Math.ceil(totalData / paginate.limit),
+        totalItems: totalData,
+      },
+    };
+  }
+
+  async getRandomProduct(filters: IProductFilter) {
+    const { condition, sort, paginate } = this.getQuery(filters);
+
+    // Construct the aggregation pipeline
+    const pipeline: any[] = [{ $match: condition }];
+
+    // Add random sampling if no sorting is specified
+    if (!filters.sort) {
+      pipeline.push({ $sample: { size: paginate.limit } });
+    } else {
+      pipeline.push({ $sort: sort });
+    }
+
+    // Nếu có userId thì thêm lookup để lấy giá theo user
+    if (filters?.userId) {
+      pipeline.push(
+        {
+          $lookup: {
+            from: 'product_prices',
+            let: { productId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$productId', '$$productId'] },
+                      { $eq: ['$userId', new ObjectId(filters.userId)] },
+                    ],
+                  },
+                },
+              },
+              { $limit: 1 },
+            ],
+            as: 'customPriceData',
+          },
+        },
+        {
+          $addFields: {
+            finalPrice: {
+              $cond: [
+                { $gt: [{ $size: '$customPriceData' }, 0] },
+                { $arrayElemAt: ['$customPriceData.customPrice', 0] },
+                '$defaultPrice',
+              ],
+            },
+          },
+        },
+      );
+    } else {
+      // Nếu không có userId thì lấy finalPrice = defaultPrice
+      pipeline.push({
+        $addFields: {
+          finalPrice: '$defaultPrice',
+        },
+      });
+    }
+
+    // Join category
+    pipeline.push(
+      {
+        $lookup: {
+          from: 'category',
+          localField: 'categoryId',
+          foreignField: '_id',
+          as: 'category',
+        },
+      },
+      {
+        $unwind: {
+          path: '$category',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          ...this.getProject(),
+          category: { $ifNull: ['$category', {}] },
+          finalPrice: 1,
         },
       },
     );

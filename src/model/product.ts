@@ -18,6 +18,7 @@ export class Product implements IProduct {
   defaultPrice: number;
   unitName: EUnit;
   suppliers?: ISupplierInfo[];
+  isRetailAvailable?: boolean;
   slug?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -31,6 +32,7 @@ export class Product implements IProduct {
     this.defaultPrice = data.defaultPrice || 0;
     this.unitName = data.unitName;
     this.suppliers = data.suppliers ?? [];
+    this.isRetailAvailable = data.isRetailAvailable;
     this.slug = data.slug;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
@@ -44,6 +46,7 @@ export class Product implements IProduct {
       categoryId: yup.string().objectId().required(),
       defaultPrice: yup.number().required().default(0),
       unitName: yup.string().oneOf(Object.values(EUnit)).required(),
+      isRetailAvailable: yup.boolean().default(false),
       suppliers: yup.array().of(
         yup.object().shape({
           supplierId: yup.string().objectId().required(),

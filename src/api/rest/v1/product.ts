@@ -7,6 +7,7 @@ export function initProduct(api: API) {
   // user
   api.baseRoutes.product.get('/random/web-user', api.handler(handlers.getMore));
   api.baseRoutes.product.get('/web-user', api.handler(handlers.getPagination));
+  api.baseRoutes.product.get('/list/web-user', api.handler(handlers.getProductListByUser));
   api.baseRoutes.product.get('/:slug/web-user', api.handler(handlers.getDetailBySlug));
   // admin
   api.baseRoutes.product.get(

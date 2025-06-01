@@ -1,11 +1,11 @@
-import { NextFunction, Request, Response } from 'express';
-import { StatusCodes } from 'http-status-codes';
-
 import { Context } from 'api';
 import { ProductApp } from 'app';
+import { NextFunction, Request, Response } from 'express';
+import { StatusCodes } from 'http-status-codes';
 import { IProductFilter } from 'interface';
 import { AppError, Product } from 'model';
-import { isValidId, tryParseJson, validatePagination } from 'utils';
+import { isValidId, tryParseJson, validatePagination, verifyAccessToken } from 'utils';
+import to from 'await-to-js';
 
 const where = 'Handlers.product';
 
@@ -36,8 +36,12 @@ export async function getMore(
     const { limit = 10, page = 1, order, sort } = req.query;
     const filterObject = tryParseJson(req.query.filters);
 
+    const authorization = req.headers.authorization as string;
+    const [error, resUser] = await to(verifyAccessToken(authorization?.split(' ')[1]));
+
     const filters: IProductFilter = {
       ...filterObject,
+      userId: resUser?.id || null,
       limit: Number(limit),
       page: Number(page),
       order,
@@ -46,10 +50,43 @@ export async function getMore(
 
     validatePagination(filters.page, filters.limit);
 
-    const result = await new ProductApp(ctx).getMore(filters);
+    const result = await new ProductApp(ctx).getRandomProduct(filters);
 
     res.json(result);
   } catch (err) {
+    next(err);
+  }
+}
+
+export async function getProductListByUser(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { limit = 10, page = 1, order, sort } = req.query;
+    const filterObject = tryParseJson(req.query.filters);
+
+    const authorization = req.headers.authorization as string;
+    const [error, resUser] = await to(verifyAccessToken(authorization?.split(' ')[1]));
+
+    const filters: IProductFilter = {
+      ...filterObject,
+      userId: resUser?.id || null,
+      limit: Number(limit),
+      page: Number(page),
+      order,
+      sort,
+    };
+
+    validatePagination(filters.page, filters.limit);
+
+    const result = await new ProductApp(ctx).getListMoreByUser(filters);
+
+    res.json(result);
+  } catch (err) {
+    console.log(err);
     next(err);
   }
 }
