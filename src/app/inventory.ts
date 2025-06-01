@@ -119,4 +119,17 @@ export class InventoryApp extends BaseApp {
       });
     }
   }
+
+  async createMany(inventorys: Inventory[]) {
+    try {
+      await this.getStore().inventory().createMany(inventorys);
+    } catch (error: any) {
+      throw new AppError({
+        id: `${where}.createMany`,
+        message: 'Tạo inventory thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
 }

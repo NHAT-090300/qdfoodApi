@@ -6,6 +6,7 @@ export interface IInventory {
   productId: ObjectId;
   supplierId: ObjectId;
   quantity: number;
+  warehousePrice: number;
   createdAt?: Date;
   updatedAt?: Date;
 }

@@ -9,6 +9,11 @@ export function initInventory(api: API) {
     api.handler(authentication(ERole.USER)),
     api.handler(handlers.getAll),
   );
+  api.baseRoutes.inventory.post(
+    '/create-many',
+    api.handler(authentication(ERole.ADMIN)),
+    api.handler(handlers.createManyInventory),
+  );
   api.baseRoutes.inventory.get(
     '/',
     api.handler(authentication(ERole.USER)),

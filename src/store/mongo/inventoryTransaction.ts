@@ -127,4 +127,17 @@ export class MongoInventoryTransaction extends BaseStore<IInventoryTransaction> 
     data._id = new ObjectId(id);
     return data;
   }
+
+  async createMany(arrData: IInventoryTransaction[]) {
+    const now = new Date();
+    const preparedData = arrData.map((item) => {
+      return {
+        ...item,
+        _id: item._id || new ObjectId(),
+        createdAt: item.createdAt || now,
+        updatedAt: now,
+      };
+    });
+    await this.collection.insertMany(preparedData);
+  }
 }

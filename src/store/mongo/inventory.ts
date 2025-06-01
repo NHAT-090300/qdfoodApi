@@ -148,4 +148,21 @@ export class MongoInventory extends BaseStore<IInventory> {
     data._id = new ObjectId(id);
     return data;
   }
+
+  async createMany(data: IInventory[]) {
+    // const now = new Date();
+
+    const bulkOps = data.map((item) => ({
+      updateOne: {
+        filter: { productId: item.productId, supplierId: item.supplierId },
+        update: {
+          $inc: { quantity: item.quantity },
+          $set: { warehousePrice: item.warehousePrice, updatedAt: new Date() },
+        },
+        upsert: true,
+      },
+    }));
+
+    await this.collection.bulkWrite(bulkOps);
+  }
 }

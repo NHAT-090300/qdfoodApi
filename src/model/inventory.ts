@@ -12,6 +12,7 @@ export class Inventory implements IInventory {
   productId: ObjectId;
   supplierId: ObjectId;
   quantity: number;
+  warehousePrice: number;
   createdAt?: Date;
   updatedAt?: Date;
 
@@ -20,6 +21,7 @@ export class Inventory implements IInventory {
     this.productId = data.productId;
     this.supplierId = data.supplierId;
     this.quantity = data.quantity || 0;
+    this.warehousePrice = data.warehousePrice || 0;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
   }
@@ -29,6 +31,7 @@ export class Inventory implements IInventory {
       productId: yup.string().objectId().required(),
       supplierId: yup.string().objectId().required(),
       quantity: yup.number().default(0),
+      warehousePrice: yup.number().default(0),
     });
 
     const [errors, result] = await to(validateWithYup(schema, data));
@@ -42,6 +45,37 @@ export class Inventory implements IInventory {
       productId: new ObjectId(result.productId),
       supplierId: new ObjectId(result.supplierId),
     });
+  }
+
+  static async sequelizeArray(data: IInventory[]) {
+    const schema = yup.object({
+      items: yup
+        .array()
+        .of(
+          yup.object({
+            productId: yup.string().objectId().required(),
+            supplierId: yup.string().objectId().required(),
+            quantity: yup.number().default(0),
+            warehousePrice: yup.number().default(0),
+          }),
+        )
+        .required(),
+    });
+
+    const [errors, result] = await to(validateWithYup(schema, { items: data }));
+
+    if (errors || !result) {
+      throw invalidInformation(`${where}.validate`, 'Thông tin không hợp lệ', errors);
+    }
+
+    return result.items.map(
+      (item: any) =>
+        new Inventory({
+          ...item,
+          productId: new ObjectId(item.productId),
+          supplierId: new ObjectId(item.supplierId),
+        }),
+    );
   }
 
   preSave() {
