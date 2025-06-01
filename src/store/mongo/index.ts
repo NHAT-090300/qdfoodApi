@@ -12,3 +12,4 @@ export * from './order';
 export * from './inventory';
 export * from './inventoryTransaction';
 export * from './otp';
+export * from './subCategory';

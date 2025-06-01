@@ -19,6 +19,7 @@ import {
   MongoInventory,
   MongoInventoryTransaction,
   MongoOtp,
+  MongoSubCategory,
 } from './mongo';
 
 const DB_PING_ATTEMPTS = 5;
@@ -40,6 +41,7 @@ class MongoStores {
   inventory?: MongoInventory;
   inventoryTransaction?: MongoInventoryTransaction;
   otp?: MongoOtp;
+  subCategory?: MongoSubCategory;
 }
 
 export default class MongoStore {
@@ -103,6 +105,7 @@ export default class MongoStore {
       this.stores.inventory = new MongoInventory(this.db);
       this.stores.inventoryTransaction = new MongoInventoryTransaction(this.db);
       this.stores.otp = new MongoOtp(this.db);
+      this.stores.subCategory = new MongoSubCategory(this.db);
     }
   };
 
@@ -238,5 +241,11 @@ export default class MongoStore {
       throw new Error('InventoryTransaction Store is not setup yet');
     }
     return this.stores.inventoryTransaction;
+  }
+  subCategory() {
+    if (!this.stores.subCategory) {
+      throw new Error('subCategory Store is not setup yet');
+    }
+    return this.stores.subCategory;
   }
 }

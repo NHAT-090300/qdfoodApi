@@ -25,6 +25,7 @@ class BaseRoutes {
   order: Router = Router();
   inventory: Router = Router();
   inventoryTransaction: Router = Router();
+  subCategory: Router = Router();
 
   constructor(rootRouter: Router) {
     this.root = rootRouter;
@@ -33,6 +34,7 @@ class BaseRoutes {
     this.v1.use('/user', this.user);
     this.v1.use('/news', this.news);
     this.v1.use('/category', this.category);
+    this.v1.use('/sub-category', this.subCategory);
     this.v1.use('/auth', this.auth);
     this.v1.use('/product', this.product);
     this.v1.use('/upload', this.upload);
@@ -62,6 +64,7 @@ export class API {
     apiV1.initUser(this);
     apiV1.initNews(this);
     apiV1.initCategory(this);
+    apiV1.initSubCategory(this);
     apiV1.initAuth(this);
     apiV1.initProduct(this);
     apiV1.initUpload(this);
