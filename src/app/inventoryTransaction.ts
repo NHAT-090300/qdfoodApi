@@ -76,6 +76,21 @@ export class InventoryTransactionApp extends BaseApp {
     }
   }
 
+  async createMany(data: InventoryTransaction[]) {
+    try {
+      const result = await this.getStore().inventoryTransaction().createMany(data);
+
+      return result;
+    } catch (error: any) {
+      throw new AppError({
+        id: `${where}.createMany`,
+        message: 'Tạo inventoryTransaction thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+
   async update(inventoryTransactionId: string, data: InventoryTransaction) {
     try {
       const result = await this.getStore()

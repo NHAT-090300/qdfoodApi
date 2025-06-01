@@ -10,18 +10,22 @@ const where = 'model.inventoryTransaction';
 export class InventoryTransaction implements IInventoryTransaction {
   _id?: ObjectId;
   productId: ObjectId;
+  supplierId: ObjectId;
   type: EInventoryTransactionType;
   quantity: number;
   orderId?: ObjectId;
   note?: string;
+  warehousePrice: number;
   createdAt?: Date;
   updatedAt?: Date;
 
   constructor(data: IInventoryTransaction) {
     this._id = data._id;
     this.productId = data.productId;
+    this.supplierId = data.supplierId;
     this.type = data.type;
     this.quantity = data.quantity || 0;
+    this.warehousePrice = data.warehousePrice || 0;
     this.orderId = data.orderId;
     this.note = data.note;
     this.createdAt = data.createdAt;
@@ -31,6 +35,8 @@ export class InventoryTransaction implements IInventoryTransaction {
   static async sequelize(data: any) {
     const schema = yup.object().shape({
       productId: yup.string().objectId().required(),
+      supplierId: yup.string().objectId().required(),
+      warehousePrice: yup.number().default(0),
       type: yup.string().oneOf(Object.values(EInventoryTransactionType)).required(),
       quantity: yup.number().required().default(0),
       orderId: yup.string().objectId(),
@@ -46,8 +52,41 @@ export class InventoryTransaction implements IInventoryTransaction {
     return new InventoryTransaction({
       ...result,
       productId: new ObjectId(result.productId),
-      orderId: new ObjectId(result.orderId),
+      supplierId: new ObjectId(result?.supplierId),
+      orderId: result?.orderId ? new ObjectId(result.orderId) : undefined,
     });
+  }
+
+  static async sequelizeArray(data: IInventoryTransaction[]) {
+    const schema = yup.object({
+      items: yup
+        .array()
+        .of(
+          yup.object({
+            productId: yup.string().objectId().required(),
+            supplierId: yup.string().objectId().required(),
+            quantity: yup.number().default(0),
+            type: yup.string().oneOf(Object.values(EInventoryTransactionType)),
+            warehousePrice: yup.number().default(0),
+          }),
+        )
+        .required(),
+    });
+
+    const [errors, result] = await to(validateWithYup(schema, { items: data }));
+
+    if (errors || !result) {
+      throw invalidInformation(`${where}.validate`, 'Thông tin không hợp lệ', errors);
+    }
+
+    return result.items.map(
+      (item: any) =>
+        new InventoryTransaction({
+          ...item,
+          productId: new ObjectId(item.productId),
+          supplierId: new ObjectId(item.supplierId),
+        }),
+    );
   }
 
   preSave() {

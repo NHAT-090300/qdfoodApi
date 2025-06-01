@@ -24,6 +24,11 @@ export function initInventorytransaction(api: API) {
     api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.createInventoryTransaction),
   );
+  api.baseRoutes.inventoryTransaction.post(
+    '/create-many',
+    api.handler(authentication(ERole.ADMIN)),
+    api.handler(handlers.createManyInventoryTransaction),
+  );
   api.baseRoutes.inventoryTransaction.put(
     '/:id',
     api.handler(authentication(ERole.ADMIN)),
