@@ -10,7 +10,7 @@ const where = 'model.inventory';
 export class Inventory implements IInventory {
   _id?: ObjectId;
   productId: ObjectId;
-  supplierId: ObjectId;
+  // supplierId: ObjectId;
   quantity: number;
   warehousePrice: number;
   createdAt?: Date;
@@ -19,7 +19,7 @@ export class Inventory implements IInventory {
   constructor(data: IInventory) {
     this._id = data._id;
     this.productId = data.productId;
-    this.supplierId = data.supplierId;
+    // this.supplierId = data.supplierId;
     this.quantity = data.quantity || 0;
     this.warehousePrice = data.warehousePrice || 0;
     this.createdAt = data.createdAt;
@@ -43,7 +43,7 @@ export class Inventory implements IInventory {
     return new Inventory({
       ...result,
       productId: new ObjectId(result.productId),
-      supplierId: new ObjectId(result.supplierId),
+      // supplierId: new ObjectId(result.supplierId),
     });
   }
 
@@ -54,7 +54,7 @@ export class Inventory implements IInventory {
         .of(
           yup.object({
             productId: yup.string().objectId().required(),
-            supplierId: yup.string().objectId().required(),
+            // supplierId: yup.string().objectId().required(),
             quantity: yup.number().default(0),
             warehousePrice: yup.number().default(0),
           }),
@@ -73,7 +73,7 @@ export class Inventory implements IInventory {
         new Inventory({
           ...item,
           productId: new ObjectId(item.productId),
-          supplierId: new ObjectId(item.supplierId),
+          // supplierId: new ObjectId(item.supplierId),
         }),
     );
   }
