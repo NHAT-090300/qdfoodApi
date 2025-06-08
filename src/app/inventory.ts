@@ -67,7 +67,7 @@ export class InventoryApp extends BaseApp {
         .inventory()
         .findOne({
           productId: new ObjectId(data?.productId),
-          supplierId: new ObjectId(data?.supplierId),
+          // supplierId: new ObjectId(data?.supplierId),
         });
 
       if (isExist) {

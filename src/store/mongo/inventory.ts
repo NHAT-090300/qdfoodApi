@@ -149,20 +149,94 @@ export class MongoInventory extends BaseStore<IInventory> {
     return data;
   }
 
+  // async createMany(data: IInventory[]) {
+  //   // const now = new Date();
+
+  //   const bulkOps = data.map((item) => ({
+  //     updateOne: {
+  //       filter: { productId: item.productId, supplierId: item.supplierId },
+  //       update: {
+  //         $inc: { quantity: item.quantity },
+  //         $set: { warehousePrice: item.warehousePrice, updatedAt: new Date() },
+  //       },
+  //       upsert: true,
+  //     },
+  //   }));
+
+  //   await this.collection.bulkWrite(bulkOps);
+  // }
+
   async createMany(data: IInventory[]) {
-    // const now = new Date();
+    const now = new Date();
 
-    const bulkOps = data.map((item) => ({
-      updateOne: {
-        filter: { productId: item.productId, supplierId: item.supplierId },
-        update: {
-          $inc: { quantity: item.quantity },
-          $set: { warehousePrice: item.warehousePrice, updatedAt: new Date() },
+    const mergedMap = new Map<
+      string,
+      {
+        productId: ObjectId;
+        quantity: number;
+        totalPrice: number;
+      }
+    >();
+
+    for (const item of data) {
+      const key = item.productId.toHexString();
+      if (mergedMap.has(key)) {
+        const existing = mergedMap.get(key)!;
+        existing.totalPrice += item.warehousePrice * item.quantity;
+        existing.quantity += item.quantity;
+      } else {
+        mergedMap.set(key, {
+          productId: item.productId,
+          quantity: item.quantity,
+          totalPrice: item.warehousePrice * item.quantity,
+        });
+      }
+    }
+
+    const productIds = Array.from(mergedMap.values()).map(({ productId }) => productId);
+
+    const existingInventories = await this.collection
+      .find({ productId: { $in: productIds } })
+      .project({ productId: 1, quantity: 1, warehousePrice: 1 })
+      .toArray();
+
+    const existingMap = new Map<string, { quantity: number; warehousePrice: number }>();
+    for (const inv of existingInventories) {
+      const key = inv.productId.toHexString();
+      existingMap.set(key, {
+        quantity: inv.quantity || 0,
+        warehousePrice: inv.warehousePrice || 0,
+      });
+    }
+
+    const bulkOps = [];
+
+    for (const [key, item] of mergedMap.entries()) {
+      const existing = existingMap.get(key);
+      const existingQty = existing?.quantity || 0;
+      const existingPrice = existing?.warehousePrice || 0;
+      const totalQty = existingQty + item.quantity;
+      const totalPrice = existingQty * existingPrice + item.totalPrice;
+
+      const avgWarehousePrice = totalQty === 0 ? existingPrice : totalPrice / totalQty;
+
+      bulkOps.push({
+        updateOne: {
+          filter: { productId: item.productId },
+          update: {
+            $inc: { quantity: item.quantity },
+            $set: {
+              warehousePrice: avgWarehousePrice,
+              updatedAt: now,
+            },
+          },
+          upsert: true,
         },
-        upsert: true,
-      },
-    }));
+      });
+    }
 
-    await this.collection.bulkWrite(bulkOps);
+    if (bulkOps.length > 0) {
+      await this.collection.bulkWrite(bulkOps);
+    }
   }
 }

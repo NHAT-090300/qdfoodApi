@@ -4,7 +4,7 @@ import { ESortOrder } from './enum';
 export interface IInventory {
   _id?: ObjectId;
   productId: ObjectId;
-  supplierId: ObjectId;
+  // supplierId: ObjectId;
   quantity: number;
   warehousePrice: number;
   createdAt?: Date;
