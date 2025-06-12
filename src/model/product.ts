@@ -15,6 +15,7 @@ export class Product implements IProduct {
   name: string;
   description?: string;
   categoryId: ObjectId;
+  subCategoryId?: ObjectId;
   defaultPrice: number;
   unitName: EUnit;
   suppliers?: ISupplierInfo[];
@@ -29,6 +30,7 @@ export class Product implements IProduct {
     this.name = data.name;
     this.description = data.description;
     this.categoryId = data.categoryId;
+    this.subCategoryId = data.subCategoryId;
     this.defaultPrice = data.defaultPrice || 0;
     this.unitName = data.unitName;
     this.suppliers = data.suppliers ?? [];
@@ -44,6 +46,7 @@ export class Product implements IProduct {
       name: yup.string().required(),
       description: yup.string(),
       categoryId: yup.string().objectId().required(),
+      subCategoryId: yup.string().objectId(),
       defaultPrice: yup.number().required().default(0),
       unitName: yup.string().oneOf(Object.values(EUnit)).required(),
       isRetailAvailable: yup.boolean().default(false),
@@ -66,6 +69,7 @@ export class Product implements IProduct {
     return new Product({
       ...result,
       categoryId: new ObjectId(result.categoryId),
+      subCategoryId: result.subCategoryId ? new ObjectId(result.subCategoryId) : undefined,
       suppliers: result?.suppliers?.map(
         (supplier: { supplierId: string; price: number; quantity: number }) => ({
           ...supplier,

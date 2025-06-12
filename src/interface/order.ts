@@ -6,21 +6,26 @@ export interface IOrder {
   userId: ObjectId;
   status: EOrderStatus;
   total: number;
-  shippingAddress: {
-    address: string;
-    city: string;
-    district: string;
-    ward: string;
-  };
-  items: {
-    productId: ObjectId;
-    quantity: number;
-    unitPrice: string;
-    damagedQuantity: number;
-    refundAmount: number;
-  }[];
+  shippingAddress: IOrderShippingAddress;
+  items: IOrderItem[];
   createdAt?: Date;
   updatedAt?: Date;
+}
+
+export interface IOrderItem {
+  productId: ObjectId;
+  quantity: number;
+  unitPrice: string;
+  price: number;
+  damagedQuantity?: number;
+  refundAmount?: number;
+}
+
+export interface IOrderShippingAddress {
+  address: string;
+  city: string;
+  district: string;
+  ward: string;
 }
 
 export interface IOrderFilter {

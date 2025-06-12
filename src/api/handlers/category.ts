@@ -75,6 +75,20 @@ export async function getAll(
   }
 }
 
+export async function getSubCategory(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const result = await new CategoryApp(ctx).getListSubCategory();
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function getDetail(
   ctx: Context,
   req: Request,

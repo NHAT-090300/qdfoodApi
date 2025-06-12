@@ -98,6 +98,39 @@ export class MongoCategory extends BaseStore<ICategory> {
     };
   }
 
+  async getListSubCategory() {
+    const result = await this.collection
+      .aggregate<{ data: ICategory[]; pageInfo: Array<{ count: number }> }>([
+        {
+          $match: { isDelete: { $ne: true } },
+        },
+        {
+          $sort: { createdAt: -1 },
+        },
+        {
+          $lookup: {
+            from: 'sub_category',
+            localField: '_id',
+            foreignField: 'categoryId',
+            as: 'subCategories',
+          },
+        },
+        {
+          $project: this.getProject({
+            subCategories: 1,
+          }),
+        },
+      ])
+      .toArray();
+
+    const data = result ?? [];
+
+    return {
+      data,
+      totalData: data.length,
+    };
+  }
+
   async getList(filters: ICategoryFilter) {
     const { condition } = this.getQuery(filters);
     return this.collection.find<ICategory>(condition, { projection: this.getProject() }).toArray();

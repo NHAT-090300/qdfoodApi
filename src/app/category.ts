@@ -36,6 +36,19 @@ export class CategoryApp extends BaseApp {
     }
   }
 
+  async getListSubCategory() {
+    try {
+      return await this.getStore().category().getListSubCategory();
+    } catch (error: any) {
+      throw new AppError({
+        id: `${where}.getListSubCategory`,
+        message: 'Lấy danh sách category thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+
   async getById(id: string) {
     try {
       const data = await this.getStore().category().findById(id);

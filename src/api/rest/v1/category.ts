@@ -5,6 +5,7 @@ import { ERole } from 'interface';
 
 export function initCategory(api: API) {
   // user
+  api.baseRoutes.category.get('/web-user', api.handler(handlers.getSubCategory));
   api.baseRoutes.category.get('/list/web-user', api.handler(handlers.getAll));
   // admin
   api.baseRoutes.category.get(

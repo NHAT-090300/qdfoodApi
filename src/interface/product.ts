@@ -7,6 +7,7 @@ export interface IProduct {
   name: string;
   description?: string;
   categoryId: ObjectId;
+  subCategoryId?: ObjectId;
   defaultPrice: number;
   unitName: EUnit;
   suppliers?: ISupplierInfo[];

@@ -23,8 +23,9 @@ export class Order implements IOrder {
     productId: ObjectId;
     quantity: number;
     unitPrice: string;
-    damagedQuantity: number;
-    refundAmount: number;
+    price: number;
+    damagedQuantity?: number;
+    refundAmount?: number;
   }[];
   createdAt?: Date;
   updatedAt?: Date;
@@ -61,8 +62,9 @@ export class Order implements IOrder {
             productId: yup.string().objectId().required(),
             quantity: yup.number().required().default(0),
             unitPrice: yup.string().required(),
-            damagedQuantity: yup.number().required().default(0),
-            refundAmount: yup.number().required().default(0),
+            price: yup.number().required().default(0),
+            damagedQuantity: yup.number().default(0),
+            refundAmount: yup.number().default(0),
           }),
         )
         .required(),
@@ -81,6 +83,7 @@ export class Order implements IOrder {
           productId: string;
           quantity: number;
           unitPrice: string;
+          price: number;
           damagedQuantity: number;
           refundAmount: number;
         }) => ({

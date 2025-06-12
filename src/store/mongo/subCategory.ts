@@ -7,7 +7,7 @@ import { BaseStore } from './base';
 
 export class MongoSubCategory extends BaseStore<ISubCategory> {
   constructor(db: Db) {
-    super(db, 'subCategory');
+    super(db, 'sub_category');
   }
 
   private getProject(custom: object = {}) {

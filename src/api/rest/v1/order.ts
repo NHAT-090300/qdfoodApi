@@ -4,6 +4,11 @@ import { authentication } from '@api/middleware';
 import { ERole } from 'interface';
 
 export function initOrder(api: API) {
+  api.baseRoutes.order.post(
+    '/create',
+    api.handler(authentication(ERole.USER)),
+    api.handler(handlers.createOrderUser),
+  );
   api.baseRoutes.order.get(
     '/list',
     api.handler(authentication(ERole.USER)),
