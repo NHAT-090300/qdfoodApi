@@ -38,6 +38,22 @@ export class ProductApp extends BaseApp {
     }
   }
 
+  async getListCartByUser(filters: IProductFilter) {
+    try {
+      const result = await this.getStore().product().getListCartByUser(filters);
+
+      return result;
+    } catch (error: any) {
+      console.log(error);
+      throw new AppError({
+        id: `${where}.getListCartByUser`,
+        message: 'Lấy danh sách product thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+
   async getRandomProduct(filters: IProductFilter) {
     try {
       const result = await this.getStore().product().getRandomProduct(filters);

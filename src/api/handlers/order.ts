@@ -2,12 +2,38 @@ import { NextFunction, Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 
 import { Context } from 'api';
-import { OrderApp, ProductApp } from 'app';
-import { EOrderStatus, IOrderFilter, IOrderItem } from 'interface';
+import { OrderApp, ProductApp, UserApp } from 'app';
+import { EOrderStatus, EPaymentMethod, IOrderFilter, IOrderItem } from 'interface';
 import { AppError, Order } from 'model';
-import { isValidId, tryParseJson, validatePagination } from 'utils';
+import { isValidId, tryParseJson, validatePagination, validatePhone } from 'utils';
 
 const where = 'Handlers.order';
+
+export async function getSummary(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const userId = req.user?._id;
+
+    if (!userId) {
+      throw new AppError({
+        id: `${where}.getSummary`,
+        message: 'Vui lòng đăng nhập',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    const result = await new OrderApp(ctx).getCountByStatuses({
+      userId,
+    });
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
 
 export async function createOrderUser(
   ctx: Context,
@@ -16,7 +42,7 @@ export async function createOrderUser(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { shippingAddress, items } = req.body;
+    const { shippingAddress, items, note, phoneNumber, paymentMethod } = req.body;
 
     const userId = req.user?._id;
 
@@ -24,6 +50,30 @@ export async function createOrderUser(
       throw new AppError({
         id: `${where}.createOrderUser`,
         message: 'Vui lòng đăng nhập',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    if (!paymentMethod || !Object.values(EPaymentMethod).includes(paymentMethod)) {
+      throw new AppError({
+        id: `${where}.createOrderUser`,
+        message: 'Vui lòng cung cấp phương thức thanh toán',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    if (!phoneNumber || !validatePhone(phoneNumber)) {
+      throw new AppError({
+        id: `${where}.createOrderUser`,
+        message: 'Vui lòng cung cấp số điện thoại',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    if (!shippingAddress) {
+      throw new AppError({
+        id: `${where}.createOrderUser`,
+        message: 'Vui lòng cung cấp địa chỉ giao hàng',
         statusCode: StatusCodes.BAD_REQUEST,
       });
     }
@@ -101,9 +151,30 @@ export async function createOrderUser(
       userId,
       status: EOrderStatus?.PENDING,
       total,
+      note,
+      phoneNumber,
+      paymentMethod,
       shippingAddress,
       items,
     });
+
+    const oldUser = await new UserApp(ctx).getById(userId);
+
+    if (!oldUser) {
+      throw new AppError({
+        id: `${where}.createOrderUser`,
+        message: 'Người dùng không tồn tại',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    if (!oldUser.phoneNumber || !oldUser.address) {
+      await new UserApp(ctx).update(userId, {
+        ...oldUser,
+        phoneNumber: oldUser.phoneNumber || phoneNumber,
+        address: oldUser.address || shippingAddress,
+      });
+    }
 
     const result = await new OrderApp(ctx).create(data);
 
@@ -139,9 +210,18 @@ export async function getPagination(
   try {
     const { limit = 10, page = 1, order, sort } = req.query;
     const filterObject = tryParseJson(req.query.filters);
+    const userId = req.user?._id;
+    if (!userId) {
+      throw new AppError({
+        id: `${where}.getPagination`,
+        message: 'Vui lòng cung cấp người dùng',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
 
     const filters: IOrderFilter = {
       ...filterObject,
+      userId,
       limit: Number(limit),
       page: Number(page),
       order,

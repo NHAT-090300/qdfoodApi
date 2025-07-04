@@ -100,6 +100,28 @@ export class MongoProduct extends BaseStore<IProduct> {
       };
     }
 
+    const orConditions = [];
+
+    if (filters.categories?.length) {
+      orConditions.push({
+        categoryId: {
+          $in: filters.categories.map((id) => (ObjectId.isValid(id) ? new ObjectId(id) : id)),
+        },
+      });
+    }
+
+    if (filters.subCategories?.length) {
+      orConditions.push({
+        subCategoryId: {
+          $in: filters.subCategories.map((id) => (ObjectId.isValid(id) ? new ObjectId(id) : id)),
+        },
+      });
+    }
+
+    if (orConditions.length) {
+      condition.$or = orConditions;
+    }
+
     if (filters.sort && filters.order) {
       sort[filters.sort] = filters.order === ESortOrder.Asc ? 1 : -1;
     } else {
@@ -214,6 +236,103 @@ export class MongoProduct extends BaseStore<IProduct> {
         totalPages: Math.ceil(totalData / paginate.limit),
         totalItems: totalData,
       },
+    };
+  }
+
+  async getListCartByUser(filters: IProductFilter) {
+    const pipeline: any[] = [
+      {
+        $match: {
+          _id: { $in: filters?.cartItems?.map((item) => new ObjectId(item?.productId)) || [] },
+        },
+      },
+    ];
+
+    // Nếu có userId thì thêm lookup để lấy giá theo user
+    if (filters?.userId) {
+      pipeline.push(
+        {
+          $lookup: {
+            from: 'product_prices',
+            let: { productId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$productId', '$$productId'] },
+                      { $eq: ['$userId', new ObjectId(filters.userId)] },
+                    ],
+                  },
+                },
+              },
+              { $limit: 1 },
+            ],
+            as: 'customPriceData',
+          },
+        },
+        {
+          $addFields: {
+            finalPrice: {
+              $cond: [
+                { $gt: [{ $size: '$customPriceData' }, 0] },
+                { $arrayElemAt: ['$customPriceData.customPrice', 0] },
+                '$defaultPrice',
+              ],
+            },
+          },
+        },
+      );
+    } else {
+      // Nếu không có userId thì lấy finalPrice = defaultPrice
+      pipeline.push({
+        $addFields: {
+          finalPrice: '$defaultPrice',
+        },
+      });
+    }
+
+    // Join category
+    pipeline.push(
+      {
+        $lookup: {
+          from: 'category',
+          localField: 'categoryId',
+          foreignField: '_id',
+          as: 'category',
+        },
+      },
+      {
+        $unwind: {
+          path: '$category',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          ...this.getProject(),
+          category: { $ifNull: ['$category', {}] },
+          finalPrice: 1,
+        },
+      },
+    );
+
+    const result = await this.collection.aggregate(pipeline).toArray();
+
+    const cartItemsMap = new Map(
+      filters?.cartItems?.map((item) => [String(item?.productId), item?.quantity || 1]),
+    );
+
+    const data = result.map((product) => ({
+      ...product,
+      quantity: cartItemsMap.get(String(product._id)) || 1,
+    }));
+
+    const totalData = result.length;
+
+    return {
+      data,
+      totalData,
     };
   }
 

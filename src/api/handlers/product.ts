@@ -6,6 +6,7 @@ import { IProductFilter } from 'interface';
 import { AppError, Product } from 'model';
 import { isValidId, tryParseJson, validatePagination, verifyAccessToken } from 'utils';
 import to from 'await-to-js';
+import { toArray } from 'lodash';
 
 const where = 'Handlers.product';
 
@@ -87,6 +88,39 @@ export async function getProductListByUser(
     res.json(result);
   } catch (err) {
     console.log(err);
+    next(err);
+  }
+}
+
+export async function getProductListCartByUser(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const cartItems = JSON.parse((req.query.cartItems as string) || '[]');
+
+    if (!Array.isArray(cartItems) || cartItems.length === 0) {
+      throw new AppError({
+        id: `${where}.getProductListCartByUser`,
+        message: 'cartItems không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    const authorization = req.headers.authorization as string;
+    const [error, resUser] = await to(verifyAccessToken(authorization?.split(' ')[1]));
+
+    const filters: IProductFilter = {
+      userId: resUser?.id || null,
+      cartItems,
+    };
+
+    const result = await new ProductApp(ctx).getListCartByUser(filters);
+
+    res.json(result);
+  } catch (err) {
     next(err);
   }
 }

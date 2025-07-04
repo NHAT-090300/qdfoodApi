@@ -8,10 +8,19 @@ export interface IOrder {
   total: number;
   shippingAddress: IOrderShippingAddress;
   items: IOrderItem[];
+  paymentMethod?: EPaymentMethod;
+  note?: string;
+  phoneNumber?: string;
+  isPaid?: boolean;
+  isDelivered?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
+export enum EPaymentMethod {
+  COD = 'COD',
+  BANK_TRANSFER = 'BANK_TRANSFER',
+}
 export interface IOrderItem {
   productId: ObjectId;
   quantity: number;
@@ -30,6 +39,8 @@ export interface IOrderShippingAddress {
 
 export interface IOrderFilter {
   keyword?: string;
+  userId?: string;
+  status?: EOrderStatus;
   ids?: string[];
   page?: number;
   limit?: number;

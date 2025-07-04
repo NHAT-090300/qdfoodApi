@@ -59,6 +59,8 @@ export interface ISupplierInfo {
 
 export interface IProductFilter {
   categoryId?: string;
+  categories?: string[];
+  subCategories?: string[];
   keyword?: string;
   ids?: string[];
   page?: number;
@@ -73,4 +75,8 @@ export interface IProductFilter {
   category?: string;
   ninProduct?: string[];
   userId?: string;
+  cartItems?: {
+    productId: string;
+    quantity: number;
+  }[];
 }

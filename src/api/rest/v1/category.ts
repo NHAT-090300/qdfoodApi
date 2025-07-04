@@ -9,6 +9,11 @@ export function initCategory(api: API) {
   api.baseRoutes.category.get('/list/web-user', api.handler(handlers.getAll));
   // admin
   api.baseRoutes.category.get(
+    '/all',
+    api.handler(authentication(ERole.USER)),
+    api.handler(handlers.getSubCategory),
+  );
+  api.baseRoutes.category.get(
     '/list',
     api.handler(authentication(ERole.USER)),
     api.handler(handlers.getAll),

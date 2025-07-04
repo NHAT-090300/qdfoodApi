@@ -8,6 +8,19 @@ import BaseApp from './base';
 const where = 'App.order';
 
 export class OrderApp extends BaseApp {
+  async getCountByStatuses(filters: IOrderFilter) {
+    try {
+      return await this.getStore().order().getCountByStatuses(filters);
+    } catch (error: any) {
+      throw new AppError({
+        id: `${where}.getCountByStatuses`,
+        message: 'Lấy danh sách order thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+
   async getPaginate(filters: IOrderFilter) {
     try {
       const result = await this.getStore().order().getPaginate(filters);

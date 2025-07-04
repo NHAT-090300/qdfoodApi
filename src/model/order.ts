@@ -2,7 +2,7 @@ import to from 'await-to-js';
 import { ObjectId } from 'mongodb';
 import * as yup from 'yup';
 
-import { IOrder, EOrderStatus } from 'interface';
+import { IOrder, EOrderStatus, EPaymentMethod } from 'interface';
 
 import { invalidInformation, validateWithYup } from 'utils';
 
@@ -27,6 +27,9 @@ export class Order implements IOrder {
     damagedQuantity?: number;
     refundAmount?: number;
   }[];
+  paymentMethod?: EPaymentMethod;
+  note?: string;
+  phoneNumber?: string;
   createdAt?: Date;
   updatedAt?: Date;
 
@@ -37,6 +40,9 @@ export class Order implements IOrder {
     this.total = data.total || 0;
     this.shippingAddress = data.shippingAddress;
     this.items = data.items;
+    this.paymentMethod = data.paymentMethod;
+    this.note = data.note;
+    this.phoneNumber = data.phoneNumber;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
   }
@@ -68,6 +74,9 @@ export class Order implements IOrder {
           }),
         )
         .required(),
+      paymentMethod: yup.string().oneOf(Object.values(EPaymentMethod)),
+      note: yup.string(),
+      phoneNumber: yup.string(),
     });
     const [errors, result] = await to(validateWithYup(schema, data));
 

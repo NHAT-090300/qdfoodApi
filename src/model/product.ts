@@ -69,7 +69,7 @@ export class Product implements IProduct {
     return new Product({
       ...result,
       categoryId: new ObjectId(result.categoryId),
-      subCategoryId: result.subCategoryId ? new ObjectId(result.subCategoryId) : undefined,
+      subCategoryId: result.subCategoryId ? new ObjectId(result.subCategoryId) : (null as any),
       suppliers: result?.suppliers?.map(
         (supplier: { supplierId: string; price: number; quantity: number }) => ({
           ...supplier,
