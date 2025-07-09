@@ -5,23 +5,28 @@ import { ERole } from 'interface';
 
 export function initOrder(api: API) {
   api.baseRoutes.order.get(
-    '/summary',
+    '/summary/web_user',
     api.handler(authentication(ERole.USER)),
     api.handler(handlers.getSummary),
   );
   api.baseRoutes.order.post(
-    '/create',
+    '/create/web_user',
     api.handler(authentication(ERole.USER)),
     api.handler(handlers.createOrderUser),
   );
   api.baseRoutes.order.get(
-    '/list',
+    '/list/web_user',
     api.handler(authentication(ERole.USER)),
     api.handler(handlers.getAll),
   );
   api.baseRoutes.order.get(
-    '/',
+    '/web_user',
     api.handler(authentication(ERole.USER)),
+    api.handler(handlers.getPaginationForUser),
+  );
+  api.baseRoutes.order.get(
+    '/',
+    api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getPagination),
   );
   api.baseRoutes.order.get(

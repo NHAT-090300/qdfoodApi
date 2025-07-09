@@ -201,7 +201,7 @@ export async function createOrder(
   }
 }
 
-export async function getPagination(
+export async function getPaginationForUser(
   ctx: Context,
   req: Request,
   res: Response,
@@ -231,6 +231,40 @@ export async function getPagination(
     validatePagination(filters.page, filters.limit);
 
     const result = await new OrderApp(ctx).getPaginate(filters);
+
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+export async function getPagination(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { limit = 10, page = 1, order, sort } = req.query;
+    const filterObject = tryParseJson(req.query.filters);
+
+    const filters: IOrderFilter = {
+      ...filterObject,
+      limit: Number(limit),
+      page: Number(page),
+      order,
+      sort,
+    };
+
+    validatePagination(filters.page, filters.limit);
+
+    const result = await new OrderApp(ctx).getPaginate(filters, {
+      user: {
+        _id: 1,
+        name: 1,
+        phoneNumber: 1,
+        email: 1,
+      },
+    });
 
     res.json(result);
   } catch (err) {

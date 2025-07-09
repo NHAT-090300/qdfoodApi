@@ -21,9 +21,9 @@ export class OrderApp extends BaseApp {
     }
   }
 
-  async getPaginate(filters: IOrderFilter) {
+  async getPaginate(filters: IOrderFilter, project: object = {}) {
     try {
-      const result = await this.getStore().order().getPaginate(filters);
+      const result = await this.getStore().order().getPaginate(filters, project);
 
       return result;
     } catch (error: any) {

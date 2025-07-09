@@ -12,17 +12,17 @@ export function initProduct(api: API) {
   // admin
   api.baseRoutes.product.get(
     '/list',
-    api.handler(authentication(ERole.USER)),
+    api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getAll),
   );
   api.baseRoutes.product.get(
     '/',
-    api.handler(authentication(ERole.USER)),
+    api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getPagination),
   );
   api.baseRoutes.product.get(
     '/:id',
-    api.handler(authentication(ERole.USER)),
+    api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getDetail),
   );
   api.baseRoutes.product.post(

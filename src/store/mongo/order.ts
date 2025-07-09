@@ -81,7 +81,7 @@ export class MongoOrder extends BaseStore<IOrder> {
     return { condition, sort, paginate };
   }
 
-  async getPaginate(filters: IOrderFilter) {
+  async getPaginate(filters: IOrderFilter, project: object = {}) {
     const { condition, sort, paginate } = this.getQuery(filters);
 
     const result = await this.collection
@@ -92,7 +92,21 @@ export class MongoOrder extends BaseStore<IOrder> {
         {
           $sort: sort,
         },
-        { $project: this.getProject() },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'user',
+          },
+        },
+        {
+          $unwind: {
+            path: '$user',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        { $project: this.getProject(project) },
         {
           $facet: {
             data: [{ $skip: paginate.limit * (paginate.page - 1) }, { $limit: paginate.limit }],
