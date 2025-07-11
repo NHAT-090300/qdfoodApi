@@ -49,4 +49,9 @@ export function initOrder(api: API) {
     api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.deleteOrder),
   );
+  api.baseRoutes.order.patch(
+    '/:id/status',
+    api.handler(authentication(ERole.ADMIN)),
+    api.handler(handlers.updateStatusOrder),
+  );
 }

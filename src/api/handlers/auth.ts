@@ -218,7 +218,6 @@ export async function resendOtp(
       email,
       isVerified: false,
     });
-    console.log('userPending', userPending);
     if (!userPending)
       throw new AppError({
         id: `${where}.resendOtp`,
