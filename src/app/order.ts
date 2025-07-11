@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes';
 
-import { IOrderFilter } from 'interface';
+import { EOrderStatus, IOrderFilter } from 'interface';
 import { AppError, Order } from 'model';
 import { ObjectId } from 'mongodb';
 import BaseApp from './base';
@@ -51,7 +51,7 @@ export class OrderApp extends BaseApp {
 
   async getById(orderId: string) {
     try {
-      const data = await this.getStore().order().findById(orderId);
+      const data = await this.getStore().order().getOne(orderId);
 
       if (!data) {
         throw new AppError({
@@ -112,6 +112,27 @@ export class OrderApp extends BaseApp {
     } catch (error: any) {
       throw new AppError({
         id: `${where}.delete`,
+        message: 'Cập nhật order thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+
+  async updateStatus(
+    orderId: string,
+    data: {
+      status: EOrderStatus;
+      reason?: string;
+    },
+  ) {
+    try {
+      await this.getStore()
+        .order()
+        .baseUpdate({ _id: new ObjectId(orderId) }, { $set: data });
+    } catch (error: any) {
+      throw new AppError({
+        id: `${where}.updateStatus`,
         message: 'Cập nhật order thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         detail: error,

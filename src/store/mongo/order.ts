@@ -1,4 +1,4 @@
-import { escapeRegExp, isNumber } from 'lodash';
+import { escapeRegExp, isArray, isNumber } from 'lodash';
 import { ClientSession, Db, ObjectId } from 'mongodb';
 
 import { EOrderStatus, ESortOrder, IOrder, IOrderFilter } from 'interface';
@@ -42,7 +42,7 @@ export class MongoOrder extends BaseStore<IOrder> {
     };
 
     if (filters.keyword) {
-      const regex = new RegExp(escapeRegExp(filters.keyword), 'i'); // Create a case-insensitive regex
+      const regex = new RegExp(escapeRegExp(filters.keyword?.trim()), 'i'); // Create a case-insensitive regex
       condition.$expr = {
         $regexMatch: {
           input: { $toString: '$_id' }, // Convert _id to string
@@ -51,8 +51,10 @@ export class MongoOrder extends BaseStore<IOrder> {
       };
     }
 
-    if (filters.status) {
-      condition.status = filters.status;
+    if (filters?.status?.length && isArray(filters.status)) {
+      condition.status = {
+        $in: filters.status,
+      };
     }
 
     if (filters.userId) {
@@ -86,12 +88,9 @@ export class MongoOrder extends BaseStore<IOrder> {
 
     const result = await this.collection
       .aggregate<{ data: IOrder[]; pageInfo: Array<{ count: number }> }>([
-        {
-          $match: condition,
-        },
-        {
-          $sort: sort,
-        },
+        { $match: condition },
+        { $sort: sort },
+
         {
           $lookup: {
             from: 'users',
@@ -106,7 +105,55 @@ export class MongoOrder extends BaseStore<IOrder> {
             preserveNullAndEmptyArrays: true,
           },
         },
-        { $project: this.getProject(project) },
+
+        { $unwind: { path: '$items' } },
+
+        {
+          $lookup: {
+            from: 'product',
+            localField: 'items.productId',
+            foreignField: '_id',
+            as: 'items.product',
+          },
+        },
+        {
+          $unwind: {
+            path: '$items.product',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        {
+          $addFields: {
+            items: {
+              $mergeObjects: ['$items.product', '$items'],
+            },
+          },
+        },
+        {
+          $project: {
+            'items.product': 0,
+          },
+        },
+
+        {
+          $group: {
+            _id: '$_id',
+            user: { $first: '$user' },
+            userId: { $first: '$userId' },
+            status: { $first: '$status' },
+            total: { $first: '$total' },
+            shippingAddress: { $first: '$shippingAddress' },
+            paymentMethod: { $first: '$paymentMethod' },
+            note: { $first: '$note' },
+            phoneNumber: { $first: '$phoneNumber' },
+            createdAt: { $first: '$createdAt' },
+            updatedAt: { $first: '$updatedAt' },
+            items: { $push: '$items' },
+          },
+        },
+
+        // Tách pagination
         {
           $facet: {
             data: [{ $skip: paginate.limit * (paginate.page - 1) }, { $limit: paginate.limit }],
@@ -168,9 +215,79 @@ export class MongoOrder extends BaseStore<IOrder> {
     return this.collection.find<IOrder>(condition, { projection: this.getProject() }).toArray();
   }
 
-  async getOne(filters: IOrderFilter) {
-    const { condition } = this.getQuery(filters);
-    return this.collection.findOne<IOrder>(condition, { projection: this.getProject() });
+  async getOne(orderId: string) {
+    const result = await this.collection
+      .aggregate([
+        {
+          $match: {
+            _id: new ObjectId(orderId),
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'user',
+          },
+        },
+        {
+          $unwind: {
+            path: '$user',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $unwind: {
+            path: '$items',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'product',
+            localField: 'items.productId',
+            foreignField: '_id',
+            as: 'items.product',
+          },
+        },
+        {
+          $unwind: {
+            path: '$items.product',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $addFields: {
+            items: {
+              $mergeObjects: ['$items.product', '$items'],
+            },
+          },
+        },
+        {
+          $project: {
+            'items.product': 0,
+          },
+        },
+        {
+          $group: {
+            _id: '$_id',
+            userId: { $first: '$userId' },
+            user: { $first: '$user' },
+            status: { $first: '$status' },
+            total: { $first: '$total' },
+            shippingAddress: { $first: '$shippingAddress' },
+            createdAt: { $first: '$createdAt' },
+            updatedAt: { $first: '$updatedAt' },
+            items: {
+              $push: '$items',
+            },
+          },
+        },
+      ])
+      .next();
+
+    return result;
   }
 
   async createOne(data: Order, session?: ClientSession) {

@@ -368,3 +368,28 @@ export async function deleteOrder(
     next(error);
   }
 }
+
+export async function updateStatusOrder(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = req.params.id as string;
+
+    if (!isValidId(id)) {
+      throw new AppError({
+        id: `${where}.deleteOrder`,
+        message: 'id không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    await new OrderApp(ctx).updateStatus(id, req.body);
+
+    res.json('ok');
+  } catch (error) {
+    next(error);
+  }
+}

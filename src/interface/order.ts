@@ -40,7 +40,7 @@ export interface IOrderShippingAddress {
 export interface IOrderFilter {
   keyword?: string;
   userId?: string;
-  status?: EOrderStatus;
+  status?: EOrderStatus[];
   ids?: string[];
   page?: number;
   limit?: number;
