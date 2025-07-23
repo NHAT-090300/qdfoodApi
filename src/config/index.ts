@@ -35,6 +35,13 @@ export const config: IConfig = {
     staticToken: process.env.DIRECTUS_TOKEN || '',
     folderCode: process.env.DIRECTUS_FOLDER || '',
   },
+  s3: {
+    bucket: process.env.S3_BUCKET || '',
+    accessKeyId: process.env.S3_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
+    region: process.env.S3_REGION || '',
+    folderCode: process.env.S3_FOLDER_CODE || '',
+  },
   jwtSettings: {
     jwtSecret: process.env.JWT_SECRETS || '',
   },

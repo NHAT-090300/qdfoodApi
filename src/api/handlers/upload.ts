@@ -24,7 +24,7 @@ export async function uploadFile(
       });
     }
 
-    const [error, data] = await to(ctx.services.directus.uploadFile(req.file));
+    const [error, data] = await to(ctx.services.s3.uploadFile(req.file));
 
     if (error || !data.path) {
       throw new AppError({
@@ -60,7 +60,7 @@ export async function importFile(
       });
     }
 
-    const [error, data] = await to(ctx.services.directus.importFile(url, folder));
+    const [error, data] = await to(ctx.services.s3.importFile(url, folder));
 
     if (error || !data.path) {
       throw new AppError({
@@ -104,7 +104,7 @@ export async function patchFile(
       });
     }
 
-    const [error, data] = await to(ctx.services.directus.patchFile(fileId, req.file));
+    const [error, data] = await to(ctx.services.s3.patchFile(fileId, req.file));
 
     if (error || !data.path) {
       throw new AppError({
@@ -150,7 +150,7 @@ export async function removeFile(
       }
     });
 
-    await ctx.services.directus.deleteByPaths(paths);
+    await ctx.services.s3.deleteByPaths(paths);
 
     res.json('ok');
   } catch (error) {

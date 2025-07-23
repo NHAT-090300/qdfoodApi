@@ -28,14 +28,11 @@ export interface DirectusData {
 }
 
 export interface FileUpload {
-  width: number | null;
-  height: number | null;
+  size: number | null;
   fieldname: string | null;
   originalname: string | null;
   encoding: string | null;
   mimetype: string | null;
   path: string;
-  size: number | null;
   filename: string | null;
-  uploadDate: Date | null;
 }

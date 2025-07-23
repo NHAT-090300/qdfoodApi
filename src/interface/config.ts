@@ -43,6 +43,14 @@ export interface IDirectusSettings {
   staticToken: string;
 }
 
+export interface IS3Config {
+  bucket: string;
+  region: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  folderCode: string;
+}
+
 export interface IConfig {
   serviceSettings: IServiceSettings;
   mongoSettings: IMongoSettings;
@@ -51,4 +59,5 @@ export interface IConfig {
   cloudinary: ICloundinary;
   jwtSettings: IJwtSettings;
   directus: IDirectusSettings;
+  s3: IS3Config;
 }
