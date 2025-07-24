@@ -44,8 +44,12 @@ export class UserApp extends BaseApp {
             name: 1,
             email: 1,
             phoneNumber: 1,
+            address: 1,
             role: 1,
             isDelete: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            password: 1,
             social: 1,
           },
         });
@@ -99,6 +103,33 @@ export class UserApp extends BaseApp {
       throw new AppError({
         id: `${where}.create`,
         message: 'Tạo user thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+
+  async updateClient(id: string, data: TUserUpdate) {
+    try {
+      const oldUser = await this.getById(id);
+
+      const newData = new User({
+        ...data,
+        email: oldUser?.email,
+        password: oldUser?.password,
+      });
+
+      const result = await this.getStore().user().updateOne(id, newData);
+
+      if (oldUser?.avatar !== result?.avatar) {
+        this.getServices().cloudinary.deleteByPaths([oldUser?.avatar as string]);
+      }
+
+      return result;
+    } catch (error: any) {
+      throw new AppError({
+        id: `${where}.update`,
+        message: 'Cập nhật user thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         detail: error,
       });

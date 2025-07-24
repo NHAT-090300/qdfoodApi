@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { hash } from 'bcrypt';
+import { compare, hash } from 'bcrypt';
 
 import { Context } from 'api';
 import { UserApp } from 'app';
@@ -109,6 +109,114 @@ export async function getDetail(
     res.json(result);
   } catch (err) {
     next(err);
+  }
+}
+
+export async function updatePasswordClient(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = req.user?._id as string;
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+
+    if (!isValidId(id)) {
+      throw new AppError({
+        id: `${where}.updateUser`,
+        message: 'id không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      throw new AppError({
+        id: `${where}.updateUser`,
+        message: 'Vui lòng nhập đầy đủ thông tin',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    if (newPassword.length < 6 || confirmPassword.length < 6)
+      throw new AppError({
+        id: `${where}.updatePasswordClient`,
+        message: 'Password must be at least 6 characters',
+        statusCode: StatusCodes?.BAD_REQUEST,
+      });
+
+    if (newPassword !== confirmPassword) {
+      throw new AppError({
+        id: `${where}.updatePasswordClient`,
+        message: 'Mật khẩu mới và xác nhận mật khẩu không khớp',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    if (oldPassword === newPassword) {
+      throw new AppError({
+        id: `${where}.updatePasswordClient`,
+        message: 'Mật khẩu mới không được trùng với mật khẩu cũ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    const oldUser = await new UserApp(ctx).getById(id);
+
+    if (!oldUser) {
+      throw new AppError({
+        id: `${where}.updatePasswordClient`,
+        message: 'User không có hoặc chưa tồn tại',
+        statusCode: StatusCodes.NOT_FOUND,
+      });
+    }
+
+    const isValidPass = await compare(newPassword, oldUser?.password);
+
+    if (isValidPass) {
+      throw new AppError({
+        id: `${where}.updatePasswordClient`,
+        message: 'Mật khẩu mới không được trùng với mật khẩu cũ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    const hashPassword = await hash(newPassword, 12);
+
+    const result = await new UserApp(ctx).updatePassword(id, {
+      password: hashPassword,
+    });
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateUserClient(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = req.user?._id as string;
+
+    if (!isValidId(id)) {
+      throw new AppError({
+        id: `${where}.updateUser`,
+        message: 'id không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    const data = await User.validateUpdate(req.body);
+
+    const result = await new UserApp(ctx).updateClient(id, data);
+
+    res.json(result);
+  } catch (error) {
+    next(error);
   }
 }
 

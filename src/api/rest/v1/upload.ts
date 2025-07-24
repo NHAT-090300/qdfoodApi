@@ -13,14 +13,14 @@ export function initUpload(api: API) {
   api.baseRoutes.upload.post(
     '/image',
     multerUploadImage.single('image'),
-    api.handler(authentication(ERole.USER)),
+    // api.handler(authentication(ERole.USER)),
     api.handler(handlers.uploadFile),
   );
 
   api.baseRoutes.upload.post(
     '/video',
     multerUploadVideo.single('video'),
-    api.handler(authentication(ERole.USER)),
+    // api.handler(authentication(ERole.USER)),
     api.handler(handlers.uploadFile),
   );
 

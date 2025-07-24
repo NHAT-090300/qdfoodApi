@@ -133,7 +133,26 @@ export class MongoCategory extends BaseStore<ICategory> {
 
   async getList(filters: ICategoryFilter) {
     const { condition } = this.getQuery(filters);
-    return this.collection.find<ICategory>(condition, { projection: this.getProject() }).toArray();
+
+    const pipeline = [
+      { $match: condition },
+      {
+        $lookup: {
+          from: 'product',
+          localField: '_id',
+          foreignField: 'categoryId',
+          as: 'products',
+        },
+      },
+      {
+        $project: {
+          ...this.getProject(),
+          productCount: { $size: '$products' },
+        },
+      },
+    ];
+
+    return this.collection.aggregate<ICategory & { productCount: number }>(pipeline).toArray();
   }
 
   async getOne(filters: ICategoryFilter) {

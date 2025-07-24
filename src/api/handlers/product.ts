@@ -6,7 +6,6 @@ import { IProductFilter } from 'interface';
 import { AppError, Product } from 'model';
 import { isValidId, tryParseJson, validatePagination, verifyAccessToken } from 'utils';
 import to from 'await-to-js';
-import { toArray } from 'lodash';
 
 const where = 'Handlers.product';
 

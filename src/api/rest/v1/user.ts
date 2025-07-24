@@ -4,6 +4,16 @@ import { authentication } from '@api/middleware';
 import { ERole } from 'interface';
 
 export function initUser(api: API) {
+  api.baseRoutes.user.put(
+    '/',
+    api.handler(authentication(ERole.USER)),
+    api.handler(handlers.updateUserClient),
+  );
+  api.baseRoutes.user.put(
+    '/password',
+    api.handler(authentication(ERole.USER)),
+    api.handler(handlers.updatePasswordClient),
+  );
   api.baseRoutes.user.get(
     '/list',
     api.handler(authentication(ERole.ADMIN)),

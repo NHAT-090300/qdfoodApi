@@ -61,6 +61,10 @@ export class MongoOrder extends BaseStore<IOrder> {
       condition.userId = filters.userId;
     }
 
+    if (filters.status) {
+      condition.status = filters.status;
+    }
+
     if (Array.isArray(filters.ids) && filters.ids.length) {
       condition._id = {
         $in: filters.ids.map((id) => (ObjectId.isValid(id) ? new ObjectId(id) : id)),
