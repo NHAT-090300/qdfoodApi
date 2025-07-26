@@ -1,7 +1,11 @@
-import { IErrors } from 'interface';
+import { EOrderStatus, IErrors, IOrderShippingAddress } from 'interface';
 import { ObjectId } from 'mongodb';
 import fs from 'fs';
 import { logger } from 'logger';
+import districts from 'shared/constants/districts.json';
+import provinces from 'shared/constants/provinces.json';
+import wards from 'shared/constants/wards.json';
+import { isNaN } from 'lodash';
 
 export function generateRandomNumber() {
   return Math.floor(100000 + Math.random() * 999999);
@@ -189,3 +193,67 @@ export function isValidFileExtension(fileName: string) {
   const fileExtension = fileName.slice(fileName.lastIndexOf('.')).toLowerCase();
   return validExtensions.includes(fileExtension);
 }
+
+export const formatCurrency = (amount: unknown) => {
+  const value = Number(amount);
+  if (isNaN(value)) return '0 VND';
+  return `${value.toLocaleString('vi-VN')} VND`;
+};
+
+export function getOrderAddress(info: IOrderShippingAddress): string {
+  const list: string[] = [];
+
+  if (info?.address) list.push(info.address);
+
+  const province = provinces?.find((item) => item.code === info.city)?.name_with_type;
+  const district = districts?.find((item) => item.code === info.district)?.name_with_type;
+  const ward = wards?.find((item) => item.code === info.ward)?.name_with_type;
+
+  if (ward) list.push(ward);
+  if (district) list.push(district);
+  if (province) list.push(province);
+
+  return list.join(', ');
+}
+
+export const OrderStatus = [
+  {
+    key: EOrderStatus.PENDING,
+    color: '#FF8800',
+    label: 'Chờ xác nhận',
+    hasReason: false,
+    hasShippingCode: false,
+  },
+  {
+    key: EOrderStatus.CONFIRM,
+    color: '#320A6B',
+    label: 'Xác nhận',
+    hasReason: false,
+    hasShippingCode: false,
+  },
+  {
+    key: EOrderStatus.SHIPPING,
+    color: '#7B61FF',
+    label: 'Đang giao',
+    hasReason: false,
+    hasShippingCode: true,
+  },
+  {
+    key: EOrderStatus.COMPLETED,
+    color: '#38C976',
+    label: 'Đã giao',
+    hasReason: false,
+    hasShippingCode: false,
+  },
+  {
+    key: EOrderStatus.CANCELED,
+    color: '#FF4241',
+    label: 'Đơn huỷ',
+    hasReason: true,
+    hasShippingCode: false,
+  },
+];
+
+export const findOrderWithStatus = (status: EOrderStatus) => {
+  return OrderStatus.find((o) => o.key === status);
+};

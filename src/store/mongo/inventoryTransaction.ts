@@ -66,14 +66,26 @@ export class MongoInventoryTransaction extends BaseStore<IInventoryTransaction> 
     const { condition, sort, paginate } = this.getQuery(filters);
 
     const result = await this.collection
-      .aggregate<{ data: IInventoryTransaction[]; pageInfo: Array<{ count: number }> }>([
+      .aggregate([
         {
           $match: condition,
         },
         {
+          $lookup: {
+            from: 'product',
+            localField: 'productId',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        {
+          $addFields: {
+            product: { $arrayElemAt: ['$product', 0] },
+          },
+        },
+        {
           $sort: sort,
         },
-        { $project: this.getProject() },
         {
           $facet: {
             data: [{ $skip: paginate.limit * (paginate.page - 1) }, { $limit: paginate.limit }],

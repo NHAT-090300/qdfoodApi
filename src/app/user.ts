@@ -1,5 +1,5 @@
 import { StatusCodes } from 'http-status-codes';
-import { IUserFilter, TUserUpdate, ERole } from 'interface';
+import { ERole, IUserFilter, TUserUpdate } from 'interface';
 import { AppError, User } from 'model';
 import BaseApp from './base';
 
@@ -207,6 +207,31 @@ export class UserApp extends BaseApp {
       const result = await this.getStore().user().deleteOne(id, new User(oldUser));
 
       return result;
+    } catch (error: any) {
+      throw new AppError({
+        id: `${where}.update`,
+        message: 'Cập nhật user thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+
+  async getTotalData() {
+    try {
+      const [totalUser, totalProduct, totalOrder, totalCate] = await Promise.all([
+        this.getStore().user().count(),
+        this.getStore().product().count(),
+        this.getStore().order().count(),
+        this.getStore().category().count(),
+      ]);
+
+      return {
+        totalUser,
+        totalProduct,
+        totalOrder,
+        totalCate,
+      };
     } catch (error: any) {
       throw new AppError({
         id: `${where}.update`,

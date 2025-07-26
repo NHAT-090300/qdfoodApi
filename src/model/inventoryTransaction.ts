@@ -10,12 +10,13 @@ const where = 'model.inventoryTransaction';
 export class InventoryTransaction implements IInventoryTransaction {
   _id?: ObjectId;
   productId: ObjectId;
-  supplierId: ObjectId;
+  supplierId?: ObjectId;
   type: EInventoryTransactionType;
   quantity: number;
   orderId?: ObjectId;
   note?: string;
   warehousePrice: number;
+  refundPrice?: number;
   createdAt?: Date;
   updatedAt?: Date;
 
@@ -28,6 +29,7 @@ export class InventoryTransaction implements IInventoryTransaction {
     this.warehousePrice = data.warehousePrice || 0;
     this.orderId = data.orderId;
     this.note = data.note;
+    this.refundPrice = data?.refundPrice || 0;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
   }
@@ -35,12 +37,13 @@ export class InventoryTransaction implements IInventoryTransaction {
   static async sequelize(data: any) {
     const schema = yup.object().shape({
       productId: yup.string().objectId().required(),
-      supplierId: yup.string().objectId().required(),
+      supplierId: yup.string().objectId(),
       warehousePrice: yup.number().default(0),
       type: yup.string().oneOf(Object.values(EInventoryTransactionType)).required(),
       quantity: yup.number().required().default(0),
       orderId: yup.string().objectId(),
       note: yup.string(),
+      refundPrice: yup.number().default(0),
     });
 
     const [errors, result] = await to(validateWithYup(schema, data));
@@ -52,7 +55,7 @@ export class InventoryTransaction implements IInventoryTransaction {
     return new InventoryTransaction({
       ...result,
       productId: new ObjectId(result.productId),
-      supplierId: new ObjectId(result?.supplierId),
+      supplierId: result?.supplierId ? new ObjectId(result?.supplierId) : undefined,
       orderId: result?.orderId ? new ObjectId(result.orderId) : undefined,
     });
   }
@@ -68,6 +71,7 @@ export class InventoryTransaction implements IInventoryTransaction {
             quantity: yup.number().default(0),
             type: yup.string().oneOf(Object.values(EInventoryTransactionType)),
             warehousePrice: yup.number().default(0),
+            note: yup.string().default(''),
           }),
         )
         .required(),

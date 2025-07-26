@@ -6,11 +6,13 @@ import { v1 as uuidv1 } from 'uuid';
 
 import { EUnit, IProduct, ISupplierInfo } from 'interface';
 import { invalidInformation, validateWithYup } from 'utils';
+import moment from 'moment';
 
 const where = 'model.product';
 
 export class Product implements IProduct {
   _id?: ObjectId;
+  code: string;
   images: string[];
   name: string;
   description?: string;
@@ -26,6 +28,7 @@ export class Product implements IProduct {
 
   constructor(data: IProduct) {
     this._id = data._id;
+    this.code = data?.code;
     this.images = data.images;
     this.name = data.name;
     this.description = data.description;
@@ -40,9 +43,16 @@ export class Product implements IProduct {
     this.updatedAt = data.updatedAt;
   }
 
+  static generateProductCode() {
+    const date = moment().format('DDMMYY'); // VD: "240725"
+    const random = Math.floor(1000 + Math.random() * 9000);
+    return `SP${date}-${random}`;
+  }
+
   static async sequelize(data: any) {
     const schema = yup.object().shape({
       images: yup.array().of(yup.string().required()).required(),
+      code: yup.string(),
       name: yup.string().required(),
       description: yup.string(),
       categoryId: yup.string().objectId().required(),
@@ -65,9 +75,11 @@ export class Product implements IProduct {
     if (errors || !result) {
       throw invalidInformation(`${where}.validate`, 'Thông tin không hợp lệ', errors);
     }
+    const code = result.code || this.generateProductCode();
 
     return new Product({
       ...result,
+      code,
       categoryId: new ObjectId(result.categoryId),
       subCategoryId: result.subCategoryId ? new ObjectId(result.subCategoryId) : (null as any),
       suppliers: result?.suppliers?.map(

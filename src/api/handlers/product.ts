@@ -86,7 +86,6 @@ export async function getProductListByUser(
 
     res.json(result);
   } catch (err) {
-    console.log(err);
     next(err);
   }
 }

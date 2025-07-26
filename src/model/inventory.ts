@@ -57,6 +57,7 @@ export class Inventory implements IInventory {
             // supplierId: yup.string().objectId().required(),
             quantity: yup.number().default(0),
             warehousePrice: yup.number().default(0),
+            refundAmount: yup.number().default(0),
           }),
         )
         .required(),

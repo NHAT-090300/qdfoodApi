@@ -1,5 +1,6 @@
 import {
   Collection,
+  CountDocumentsOptions,
   Db,
   DeleteOptions,
   Document,
@@ -110,5 +111,9 @@ export class BaseStore<T extends Document> {
 
   async baseDeleteMany(filters: Filter<T>, options?: DeleteOptions): Promise<void> {
     await this.collection.deleteMany(filters, options);
+  }
+
+  async count(filters?: Filter<T>, options?: CountDocumentsOptions) {
+    return await this.collection.countDocuments(filters, options);
   }
 }

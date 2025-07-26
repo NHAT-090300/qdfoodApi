@@ -77,6 +77,7 @@ export class InventoryApp extends BaseApp {
           statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         });
       }
+
       const result = await this.getStore().inventory().createOne(data);
 
       return result;

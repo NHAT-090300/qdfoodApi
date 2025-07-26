@@ -281,3 +281,18 @@ export async function deleteUser(
     next(error);
   }
 }
+
+export async function getTotalData(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const result = await new UserApp(ctx).getTotalData();
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}

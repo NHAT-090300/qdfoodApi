@@ -15,6 +15,11 @@ export function initOrder(api: API) {
     api.handler(handlers.createOrderUser),
   );
   api.baseRoutes.order.get(
+    '/exports',
+    api.handler(authentication(ERole.ADMIN)),
+    api.handler(handlers.exportOrders),
+  );
+  api.baseRoutes.order.get(
     '/list/web_user',
     api.handler(authentication(ERole.USER)),
     api.handler(handlers.getAll),
@@ -53,5 +58,11 @@ export function initOrder(api: API) {
     '/:id/status',
     api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.updateStatusOrder),
+  );
+
+  api.baseRoutes.order.put(
+    '/:id/updateOrderItem',
+    api.handler(authentication(ERole.ADMIN)),
+    api.handler(handlers.updateOrderItemRefund),
   );
 }
