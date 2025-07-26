@@ -44,4 +44,10 @@ export function initUser(api: API) {
     api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.deleteUser),
   );
+
+  api.baseRoutes.user.get(
+    '/dashboard/getTotal',
+    api.handler(authentication(ERole.ADMIN)),
+    api.handler(handlers.getTotalData),
+  );
 }

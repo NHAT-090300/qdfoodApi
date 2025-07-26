@@ -1,7 +1,14 @@
 import { escapeRegExp, isArray, isNumber } from 'lodash';
 import { ClientSession, Db, ObjectId } from 'mongodb';
 
-import { EOrderStatus, ESortOrder, IOrder, IOrderFilter } from 'interface';
+import {
+  EOrderStatus,
+  ESortOrder,
+  IOrder,
+  IOrderFilter,
+  IOrderItem,
+  IOrderWithUser,
+} from 'interface';
 import { Order } from 'model';
 import { BaseStore } from './base';
 
@@ -216,7 +223,22 @@ export class MongoOrder extends BaseStore<IOrder> {
 
   async getList(filters: IOrderFilter) {
     const { condition } = this.getQuery(filters);
-    return this.collection.find<IOrder>(condition, { projection: this.getProject() }).toArray();
+
+    return this.collection
+      .aggregate<IOrderWithUser>([
+        { $match: condition },
+
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'user',
+          },
+        },
+        { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+      ])
+      .toArray();
   }
 
   async getOne(orderId: string) {
@@ -309,4 +331,31 @@ export class MongoOrder extends BaseStore<IOrder> {
     data._id = new ObjectId(id);
     return data;
   }
+
+  updateOrderItemRefund = async (orderId: string, updateItem: IOrderItem) => {
+    const filter = {
+      _id: new ObjectId(orderId),
+      'items.productId': new ObjectId(updateItem.productId),
+    };
+
+    const updateFields: any = {};
+    if (updateItem.quantity !== undefined) updateFields['items.$.quantity'] = updateItem.quantity;
+
+    if (updateItem.price !== undefined) updateFields['items.$.price'] = updateItem.price;
+
+    if (updateItem.unitPrice !== undefined)
+      updateFields['items.$.unitPrice'] = updateItem.unitPrice;
+
+    if (updateItem.damagedQuantity !== undefined)
+      updateFields['items.$.damagedQuantity'] = updateItem.damagedQuantity;
+
+    if (updateItem.refundAmount !== undefined)
+      updateFields['items.$.refundAmount'] = updateItem.refundAmount;
+
+    const result = await this.collection.updateOne(filter, {
+      $set: updateFields,
+    });
+
+    return result;
+  };
 }

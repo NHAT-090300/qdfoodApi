@@ -1,10 +1,12 @@
 import { escapeRegExp, isNumber } from 'lodash';
 import { ClientSession, Db, ObjectId } from 'mongodb';
 
-import { ESortOrder, IInventory, IInventoryFilter } from 'interface';
-import { Inventory } from 'model';
+import { StatusCodes } from 'http-status-codes';
+import { ESortOrder, IInventory, IInventoryFilter, IOrder } from 'interface';
+import { AppError, Inventory } from 'model';
 import { BaseStore } from './base';
 
+const where = 'Store.Inventory';
 export class MongoInventory extends BaseStore<IInventory> {
   constructor(db: Db) {
     super(db, 'inventory');
@@ -149,23 +151,6 @@ export class MongoInventory extends BaseStore<IInventory> {
     return data;
   }
 
-  // async createMany(data: IInventory[]) {
-  //   // const now = new Date();
-
-  //   const bulkOps = data.map((item) => ({
-  //     updateOne: {
-  //       filter: { productId: item.productId, supplierId: item.supplierId },
-  //       update: {
-  //         $inc: { quantity: item.quantity },
-  //         $set: { warehousePrice: item.warehousePrice, updatedAt: new Date() },
-  //       },
-  //       upsert: true,
-  //     },
-  //   }));
-
-  //   await this.collection.bulkWrite(bulkOps);
-  // }
-
   async createMany(data: IInventory[]) {
     const now = new Date();
 
@@ -237,6 +222,34 @@ export class MongoInventory extends BaseStore<IInventory> {
 
     if (bulkOps.length > 0) {
       await this.collection.bulkWrite(bulkOps);
+    }
+  }
+
+  async updateInventoryFromOrder(order: IOrder) {
+    if (!Array.isArray(order.items)) return;
+
+    for (const item of order.items) {
+      const productId = new ObjectId(item.productId);
+
+      const inventory = await this.collection.findOne({ productId });
+
+      if (!inventory) {
+        throw new AppError({
+          id: `${where}.updateInventoryFromOrder`,
+          message: `Không tìm thấy hàng tồn kho cho productId: ${item.productId}`,
+          statusCode: StatusCodes.BAD_REQUEST,
+        });
+      }
+
+      if (inventory.quantity < item.quantity) {
+        throw new AppError({
+          id: `${where}.updateInventoryFromOrder`,
+          message: `Không đủ hàng tồn kho cho productId: ${item.productId}`,
+          statusCode: StatusCodes.BAD_REQUEST,
+        });
+      }
+
+      await this.collection.updateOne({ productId }, { $inc: { quantity: -item.quantity } });
     }
   }
 }

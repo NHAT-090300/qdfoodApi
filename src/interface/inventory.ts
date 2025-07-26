@@ -9,6 +9,7 @@ export interface IInventory {
   warehousePrice: number;
   createdAt?: Date;
   updatedAt?: Date;
+  refundAmount?: number;
 }
 
 export interface IInventoryFilter {

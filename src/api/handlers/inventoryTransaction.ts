@@ -36,6 +36,7 @@ export async function createManyInventoryTransaction(
     const data = await InventoryTransaction.sequelizeArray(req.body);
 
     const result = await new InventoryTransactionApp(ctx).createMany(data);
+
     res.json(result);
   } catch (error) {
     next(error);

@@ -309,7 +309,7 @@ export async function getDetail(
       });
     }
 
-    const result = await new OrderApp(ctx).getById(id);
+    const result = await new OrderApp(ctx).getOrderWithInventoryInfo(id);
 
     res.json(result);
   } catch (err) {
@@ -387,6 +387,64 @@ export async function updateStatusOrder(
     }
 
     await new OrderApp(ctx).updateStatus(id, req.body);
+
+    res.json('ok');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function exportOrders(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { order, sort } = req.query;
+    const filterObject = tryParseJson(req.query.filters);
+
+    const filters: IOrderFilter = {
+      ...filterObject,
+      order,
+      sort,
+    };
+
+    const workbook = await new OrderApp(ctx).exportOrders(filters);
+
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename=orders.xlsx');
+
+    workbook.xlsx.write(res).then(() => {
+      res.status(200).end();
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateOrderItemRefund(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = req.params.id as string;
+
+    if (!isValidId(id)) {
+      throw new AppError({
+        id: `${where}.deleteOrder`,
+        message: 'id không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    await new OrderApp(ctx).updateOrderItemRefund(id, req.body);
 
     res.json('ok');
   } catch (error) {

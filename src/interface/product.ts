@@ -15,6 +15,7 @@ export interface IProduct {
   slug?: string;
   createdAt?: Date;
   updatedAt?: Date;
+  code: string;
 }
 
 export enum EUnit {

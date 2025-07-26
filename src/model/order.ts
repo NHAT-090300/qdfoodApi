@@ -2,7 +2,7 @@ import to from 'await-to-js';
 import { ObjectId } from 'mongodb';
 import * as yup from 'yup';
 
-import { IOrder, EOrderStatus, EPaymentMethod } from 'interface';
+import { IOrder, EOrderStatus, EPaymentMethod, IOrderItem } from 'interface';
 
 import { invalidInformation, validateWithYup } from 'utils';
 
@@ -26,6 +26,7 @@ export class Order implements IOrder {
     price: number;
     damagedQuantity?: number;
     refundAmount?: number;
+    name?: string;
   }[];
   paymentMethod?: EPaymentMethod;
   note?: string;
@@ -71,6 +72,7 @@ export class Order implements IOrder {
             price: yup.number().required().default(0),
             damagedQuantity: yup.number().default(0),
             refundAmount: yup.number().default(0),
+            name: yup.string().required(),
           }),
         )
         .required(),
@@ -87,19 +89,10 @@ export class Order implements IOrder {
     return new Order({
       ...result,
       userId: new ObjectId(result.userId),
-      items: result?.items?.map(
-        (item: {
-          productId: string;
-          quantity: number;
-          unitPrice: string;
-          price: number;
-          damagedQuantity: number;
-          refundAmount: number;
-        }) => ({
-          ...item,
-          productId: new ObjectId(item.productId),
-        }),
-      ),
+      items: (result?.items as any[])?.map((item: IOrderItem) => ({
+        ...item,
+        productId: new ObjectId(item.productId),
+      })),
     });
   }
 

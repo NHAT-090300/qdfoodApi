@@ -44,7 +44,6 @@ export class ProductApp extends BaseApp {
 
       return result;
     } catch (error: any) {
-      console.log(error);
       throw new AppError({
         id: `${where}.getListCartByUser`,
         message: 'Lấy danh sách product thất bại',

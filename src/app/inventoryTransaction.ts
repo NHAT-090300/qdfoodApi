@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes';
 
-import { IInventoryTransactionFilter } from 'interface';
+import { EInventoryTransactionType, IInventoryTransactionFilter } from 'interface';
 import { AppError, InventoryTransaction } from 'model';
 import { ObjectId } from 'mongodb';
 import BaseApp from './base';
@@ -63,6 +63,21 @@ export class InventoryTransactionApp extends BaseApp {
 
   async create(data: InventoryTransaction) {
     try {
+      if (data?.type === EInventoryTransactionType.RETURN_DAMAGED) {
+        await this.getStore()
+          .inventory()
+          .baseUpdate(
+            {
+              productId: new ObjectId(data?.productId),
+            },
+            {
+              $inc: {
+                refundAmount: data?.quantity,
+              },
+            },
+          );
+      }
+
       const result = await this.getStore().inventoryTransaction().createOne(data);
 
       return result;
