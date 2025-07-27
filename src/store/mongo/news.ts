@@ -17,6 +17,7 @@ export class MongoNews extends BaseStore<INews> {
       description: 1,
       link: 1,
       image: 1,
+      slug: 1,
       createdAt: 1,
       updatedAt: 1,
       ...custom,

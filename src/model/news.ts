@@ -1,9 +1,10 @@
 import to from 'await-to-js';
-import { ObjectId } from 'mongodb';
-import * as yup from 'yup';
-
 import { INews } from 'interface';
+import { ObjectId } from 'mongodb';
+import slugify from 'slugify';
 import { invalidInformation, validateWithYup } from 'utils';
+import { v1 as uuidv1 } from 'uuid';
+import * as yup from 'yup';
 
 const where = 'model.banner';
 
@@ -11,8 +12,10 @@ export class News implements INews {
   _id?: ObjectId;
   name: string;
   description: string;
-  link: string;
+  link?: string;
+  content?: string;
   image: string;
+  slug?: string;
   createdAt?: Date;
   updatedAt?: Date;
 
@@ -21,7 +24,9 @@ export class News implements INews {
     this.name = data.name;
     this.description = data.description;
     this.link = data.link;
+    this.content = data.content;
     this.image = data.image;
+    this.slug = data.slug;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
   }
@@ -30,8 +35,10 @@ export class News implements INews {
     const schema = yup.object().shape({
       name: yup.string().required(),
       description: yup.string().required(),
-      link: yup.string().url().required(),
+      content: yup.string(),
+      link: yup.string().url(),
       image: yup.string().required(),
+      slug: yup.string(),
     });
 
     const [errors, result] = await to(validateWithYup(schema, data));
@@ -44,8 +51,17 @@ export class News implements INews {
   }
 
   preSave() {
+    const slug = slugify(`${this?.name} ${uuidv1()}`, {
+      replacement: '-',
+      remove: undefined,
+      lower: true,
+      strict: false,
+      locale: 'vi',
+      trim: true,
+    });
     if (!this._id) delete this._id;
     if (!this.createdAt) this.createdAt = new Date();
+    this.slug = slug;
     this.updatedAt = this.createdAt;
   }
 

@@ -80,7 +80,7 @@ export async function getDetail(
   try {
     const id = req.params.id as string;
 
-    if (!isValidId(id)) {
+    if (!id) {
       throw new AppError({
         id: `${where}.getDetail`,
         message: 'id không hợp lệ',
@@ -88,7 +88,9 @@ export async function getDetail(
       });
     }
 
-    const result = await new NewsApp(ctx).getById(id);
+    const result = !isValidId(id)
+      ? await new NewsApp(ctx).getBySlug(id)
+      : await new NewsApp(ctx).getById(id);
 
     res.json(result);
   } catch (err) {

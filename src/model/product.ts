@@ -13,7 +13,7 @@ const where = 'model.product';
 export class Product implements IProduct {
   _id?: ObjectId;
   code: string;
-  images: string[];
+  images?: string[];
   name: string;
   description?: string;
   categoryId: ObjectId;
@@ -29,7 +29,7 @@ export class Product implements IProduct {
   constructor(data: IProduct) {
     this._id = data._id;
     this.code = data?.code;
-    this.images = data.images;
+    this.images = data.images || [];
     this.name = data.name;
     this.description = data.description;
     this.categoryId = data.categoryId;
@@ -51,7 +51,7 @@ export class Product implements IProduct {
 
   static async sequelize(data: any) {
     const schema = yup.object().shape({
-      images: yup.array().of(yup.string().required()).required(),
+      images: yup.array().default([]),
       code: yup.string(),
       name: yup.string().required(),
       description: yup.string(),

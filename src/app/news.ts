@@ -61,6 +61,33 @@ export class NewsApp extends BaseApp {
     }
   }
 
+  async getBySlug(slug: string) {
+    try {
+      const data = await this.getStore().news().findOne({
+        slug,
+      });
+
+      if (!data) {
+        throw new AppError({
+          id: `${where}.getBySlug`,
+          message: 'News không có hoặc chưa tồn tại',
+          statusCode: StatusCodes.NOT_FOUND,
+        });
+      }
+
+      return data;
+    } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
+      throw new AppError({
+        id: `${where}.getBySlug`,
+        message: 'Lấy dữ liệu news không thành công',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+
   async create(data: News) {
     try {
       const result = await this.getStore().news().createOne(data);

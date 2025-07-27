@@ -3,7 +3,7 @@ import { ESortOrder } from './enum';
 
 export interface IProduct {
   _id?: ObjectId;
-  images: string[];
+  images?: string[];
   name: string;
   description?: string;
   categoryId: ObjectId;

@@ -6,7 +6,9 @@ export interface INews {
   name: string;
   description: string;
   image: string;
-  link: string;
+  link?: string;
+  slug?: string;
+  content?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

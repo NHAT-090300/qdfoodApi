@@ -5,6 +5,7 @@ import { ERole } from 'interface';
 
 export function initNews(api: API) {
   api.baseRoutes.news.get('/web-user', api.handler(handlers.getPagination));
+  api.baseRoutes.news.get('/:id', api.handler(handlers.getDetail));
   api.baseRoutes.news.get(
     '/list',
     api.handler(authentication(ERole.USER)),
@@ -14,11 +15,6 @@ export function initNews(api: API) {
     '/',
     api.handler(authentication(ERole.USER)),
     api.handler(handlers.getPagination),
-  );
-  api.baseRoutes.news.get(
-    '/:id',
-    api.handler(authentication(ERole.USER)),
-    api.handler(handlers.getDetail),
   );
   api.baseRoutes.news.post(
     '/create',
