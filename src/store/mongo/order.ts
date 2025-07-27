@@ -68,7 +68,7 @@ export class MongoOrder extends BaseStore<IOrder> {
       condition.userId = filters.userId;
     }
 
-    if (filters.status) {
+    if (filters.status && filters?.status?.length) {
       condition.status = filters.status;
     }
 
