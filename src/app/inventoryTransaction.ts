@@ -1,8 +1,10 @@
 import { StatusCodes } from 'http-status-codes';
 
+import ExcelJS from 'exceljs';
 import { EInventoryTransactionType, IInventoryTransactionFilter } from 'interface';
 import { AppError, InventoryTransaction } from 'model';
 import { ObjectId } from 'mongodb';
+import { getTransactionTypeTag } from 'utils';
 import BaseApp from './base';
 
 const where = 'App.inventoryTransaction';
@@ -133,6 +135,76 @@ export class InventoryTransactionApp extends BaseApp {
         id: `${where}.delete`,
         message: 'Cập nhật inventoryTransaction thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+
+  async exportInventoryTransactionsToExcel(filters: IInventoryTransactionFilter) {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Giao dịch kho');
+
+      // Header row
+      worksheet.addRow([
+        'Mã sản phẩm',
+        'Tên sản phẩm',
+        'Số lượng',
+        'Giao dịch kho',
+        'Giá sản phẩm',
+        'Số tiền hoàn trả',
+        'Thông tin',
+      ]);
+
+      // Format header
+      worksheet.getRow(1).eachCell((cell) => {
+        cell.font = { bold: true, size: 12 };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+
+      const transactions = await this.getStore().inventoryTransaction().getList(filters);
+      // Add data rows
+      transactions.forEach((item: any) => {
+        const product = item.product ?? {};
+        const row = [
+          product.code ?? '---',
+          product.name ?? 'Không có tên',
+          item.quantity ?? 0,
+          getTransactionTypeTag(item.type)?.text ?? '---',
+          item.warehousePrice ?? 0,
+          item.refundPrice ?? 0,
+          item.note ?? '',
+        ];
+
+        const rowRef = worksheet.addRow(row);
+
+        rowRef.eachCell((cell) => {
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' },
+          };
+        });
+      });
+
+      worksheet.columns.forEach((column) => {
+        column.width = 25;
+      });
+
+      return workbook;
+    } catch (error: any) {
+      throw new AppError({
+        id: `Inventory.exportInventoryTransactionsToExcel`,
+        message: 'Xuất báo cáo giao dịch kho thất bại',
+        statusCode: 500,
         detail: error,
       });
     }

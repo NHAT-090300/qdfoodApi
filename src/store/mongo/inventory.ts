@@ -25,9 +25,8 @@ export class MongoInventory extends BaseStore<IInventory> {
   }
 
   private getQuery(filters: IInventoryFilter) {
-    const condition: Record<string, any> = {
-      parentId: null,
-    };
+    const condition: Record<string, any> = {};
+    const conditionProduct: Record<string, any> = {};
     const sort: Record<string, -1 | 1> = {};
 
     const paginate = {
@@ -39,7 +38,10 @@ export class MongoInventory extends BaseStore<IInventory> {
 
     if (filters.keyword) {
       const regex = new RegExp(escapeRegExp(filters.keyword), 'i');
-      condition.$or = [{ name: { $regex: regex } }];
+      conditionProduct.$or = [
+        { 'product.name': { $regex: regex } },
+        { 'product.code': { $regex: regex } },
+      ];
     }
 
     if (Array.isArray(filters.ids) && filters.ids.length) {
@@ -61,11 +63,11 @@ export class MongoInventory extends BaseStore<IInventory> {
       paginate.hasPaginate = true;
     }
 
-    return { condition, sort, paginate };
+    return { condition, sort, paginate, conditionProduct };
   }
 
   async getPaginate(filters: IInventoryFilter) {
-    const { condition, sort, paginate } = this.getQuery(filters);
+    const { condition, sort, paginate, conditionProduct } = this.getQuery(filters);
 
     const result = await this.collection
       .aggregate<{ data: IInventory[]; pageInfo: Array<{ count: number }> }>([
@@ -101,6 +103,7 @@ export class MongoInventory extends BaseStore<IInventory> {
         {
           $sort: sort,
         },
+        { $match: conditionProduct },
         {
           $facet: {
             data: [{ $skip: paginate.limit * (paginate.page - 1) }, { $limit: paginate.limit }],
@@ -126,8 +129,47 @@ export class MongoInventory extends BaseStore<IInventory> {
   }
 
   async getList(filters: IInventoryFilter) {
-    const { condition } = this.getQuery(filters);
-    return this.collection.find<IInventory>(condition, { projection: this.getProject() }).toArray();
+    const { condition, sort, conditionProduct } = this.getQuery(filters);
+
+    const result = await this.collection
+      .aggregate([
+        {
+          $match: condition,
+        },
+        {
+          $lookup: {
+            from: 'product',
+            localField: 'productId',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        {
+          $lookup: {
+            from: 'suppliers',
+            localField: 'supplierId',
+            foreignField: '_id',
+            as: 'supplier',
+          },
+        },
+        {
+          $addFields: {
+            product: {
+              $arrayElemAt: ['$product', 0],
+            },
+            supplier: {
+              $arrayElemAt: ['$supplier', 0],
+            },
+          },
+        },
+        {
+          $sort: sort,
+        },
+        { $match: conditionProduct },
+      ])
+      .toArray();
+
+    return result;
   }
 
   async getOne(filters: IInventoryFilter) {

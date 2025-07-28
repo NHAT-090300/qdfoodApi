@@ -451,3 +451,98 @@ export async function updateOrderItemRefund(
     next(error);
   }
 }
+
+export async function getStockOrderPaginate(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { limit = 10, page = 1, order, sort } = req.query;
+    const filterObject = tryParseJson(req.query.filters);
+
+    const filters: IOrderFilter = {
+      ...filterObject,
+      limit: Number(limit),
+      page: Number(page),
+      order,
+      sort,
+    };
+
+    validatePagination(filters.page, filters.limit);
+
+    const result = await new OrderApp(ctx).getStockOrderPaginate(filters);
+
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function exportMissingProducts(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { order, sort } = req.query;
+    const filterObject = tryParseJson(req.query.filters);
+
+    const filters: IOrderFilter = {
+      ...filterObject,
+      order,
+      sort,
+    };
+
+    const workbook = await new OrderApp(ctx).exportMissingProducts(filters);
+
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename=orders.xlsx');
+
+    workbook.xlsx.write(res).then(() => {
+      res.status(200).end();
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function exportOrderDetailsToExcel(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = req.params.id as string;
+
+    if (!isValidId(id)) {
+      throw new AppError({
+        id: `${where}.deleteOrder`,
+        message: 'id không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    const workbook = await new OrderApp(ctx).exportOrderDetailsToExcel(id);
+
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename=orders.xlsx');
+
+    workbook.xlsx.write(res).then(() => {
+      res.status(200).end();
+    });
+  } catch (err) {
+    next(err);
+  }
+}

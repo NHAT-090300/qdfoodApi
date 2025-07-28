@@ -1,5 +1,6 @@
 import { StatusCodes } from 'http-status-codes';
 
+import ExcelJS from 'exceljs';
 import { IInventoryFilter } from 'interface';
 import { AppError, Inventory } from 'model';
 import { ObjectId } from 'mongodb';
@@ -132,5 +133,62 @@ export class InventoryApp extends BaseApp {
         detail: error,
       });
     }
+  }
+
+  async exportInventoryToExcel(filters: IInventoryFilter) {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Tồn kho');
+
+    // Header row
+    worksheet.addRow([
+      'Mã sản phẩm',
+      'Tên sản phẩm',
+      'Số lượng',
+      'Giá sản phẩm',
+      'Số lượng hoàn trả',
+    ]);
+
+    // Format header
+    worksheet.getRow(1).eachCell((cell) => {
+      cell.font = { bold: true, size: 12 };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+    });
+
+    const inventory = await this.getStore().inventory().getList(filters);
+
+    // Add inventory rows
+    inventory?.forEach((item: any) => {
+      const product = item.product || {};
+      const code = product.code ?? '---';
+      const name = product.name ?? 'Không có tên';
+      const quantity = item.quantity ?? 0;
+      const price = item.warehousePrice ?? 0;
+      const returnQty = item.refundAmount ?? 0;
+
+      const row = [code, name, quantity, price, returnQty];
+
+      const rowRef = worksheet.addRow(row);
+      rowRef.eachCell((cell) => {
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+    });
+
+    worksheet.columns.forEach((column) => {
+      column.width = 20;
+    });
+
+    return workbook;
   }
 }

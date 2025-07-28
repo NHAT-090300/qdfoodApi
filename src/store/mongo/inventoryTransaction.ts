@@ -23,9 +23,9 @@ export class MongoInventoryTransaction extends BaseStore<IInventoryTransaction> 
   }
 
   private getQuery(filters: IInventoryTransactionFilter) {
-    const condition: Record<string, any> = {
-      parentId: null,
-    };
+    const condition: Record<string, any> = {};
+    const conditionProduct: Record<string, any> = {};
+
     const sort: Record<string, -1 | 1> = {};
 
     const paginate = {
@@ -38,6 +38,14 @@ export class MongoInventoryTransaction extends BaseStore<IInventoryTransaction> 
     if (filters.keyword) {
       const regex = new RegExp(escapeRegExp(filters.keyword), 'i');
       condition.$or = [{ name: { $regex: regex } }];
+    }
+
+    if (filters.keywordProduct) {
+      const regex = new RegExp(escapeRegExp(filters.keywordProduct), 'i');
+      conditionProduct.$or = [
+        { 'product.name': { $regex: regex } },
+        { 'product.code': { $regex: regex } },
+      ];
     }
 
     if (Array.isArray(filters.ids) && filters.ids.length) {
@@ -59,11 +67,11 @@ export class MongoInventoryTransaction extends BaseStore<IInventoryTransaction> 
       paginate.hasPaginate = true;
     }
 
-    return { condition, sort, paginate };
+    return { condition, sort, paginate, conditionProduct };
   }
 
   async getPaginate(filters: IInventoryTransactionFilter) {
-    const { condition, sort, paginate } = this.getQuery(filters);
+    const { condition, sort, paginate, conditionProduct } = this.getQuery(filters);
 
     const result = await this.collection
       .aggregate([
@@ -86,6 +94,7 @@ export class MongoInventoryTransaction extends BaseStore<IInventoryTransaction> 
         {
           $sort: sort,
         },
+        { $match: conditionProduct },
         {
           $facet: {
             data: [{ $skip: paginate.limit * (paginate.page - 1) }, { $limit: paginate.limit }],
@@ -111,9 +120,31 @@ export class MongoInventoryTransaction extends BaseStore<IInventoryTransaction> 
   }
 
   async getList(filters: IInventoryTransactionFilter) {
-    const { condition } = this.getQuery(filters);
-    return this.collection
-      .find<IInventoryTransaction>(condition, { projection: this.getProject() })
+    const { condition, sort, conditionProduct } = this.getQuery(filters);
+
+    return await this.collection
+      .aggregate([
+        {
+          $match: condition,
+        },
+        {
+          $lookup: {
+            from: 'product',
+            localField: 'productId',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        {
+          $addFields: {
+            product: { $arrayElemAt: ['$product', 0] },
+          },
+        },
+        {
+          $sort: sort,
+        },
+        { $match: conditionProduct },
+      ])
       .toArray();
   }
 

@@ -8,6 +8,7 @@ import {
   IOrderFilter,
   IOrderItem,
   IOrderWithUser,
+  IStockOrder,
 } from 'interface';
 import { Order } from 'model';
 import { BaseStore } from './base';
@@ -36,9 +37,7 @@ export class MongoOrder extends BaseStore<IOrder> {
   }
 
   private getQuery(filters: IOrderFilter) {
-    const condition: Record<string, any> = {
-      parentId: null,
-    };
+    const condition: Record<string, any> = {};
     const sort: Record<string, -1 | 1> = {};
 
     const paginate = {
@@ -66,10 +65,6 @@ export class MongoOrder extends BaseStore<IOrder> {
 
     if (filters.userId) {
       condition.userId = filters.userId;
-    }
-
-    if (filters.status && filters?.status?.length) {
-      condition.status = filters.status;
     }
 
     if (Array.isArray(filters.ids) && filters.ids.length) {
@@ -222,11 +217,11 @@ export class MongoOrder extends BaseStore<IOrder> {
   }
 
   async getList(filters: IOrderFilter) {
-    const { condition } = this.getQuery(filters);
-
-    return this.collection
-      .aggregate<IOrderWithUser>([
+    const { condition, sort } = this.getQuery(filters);
+    const result = await this.collection
+      .aggregate([
         { $match: condition },
+        { $sort: sort },
 
         {
           $lookup: {
@@ -236,9 +231,62 @@ export class MongoOrder extends BaseStore<IOrder> {
             as: 'user',
           },
         },
-        { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+        {
+          $unwind: {
+            path: '$user',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        { $unwind: { path: '$items' } },
+
+        {
+          $lookup: {
+            from: 'product',
+            localField: 'items.productId',
+            foreignField: '_id',
+            as: 'items.product',
+          },
+        },
+        {
+          $unwind: {
+            path: '$items.product',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        {
+          $addFields: {
+            items: {
+              $mergeObjects: ['$items.product', '$items'],
+            },
+          },
+        },
+        {
+          $project: {
+            'items.product': 0,
+          },
+        },
+
+        {
+          $group: {
+            _id: '$_id',
+            user: { $first: '$user' },
+            userId: { $first: '$userId' },
+            status: { $first: '$status' },
+            total: { $first: '$total' },
+            shippingAddress: { $first: '$shippingAddress' },
+            paymentMethod: { $first: '$paymentMethod' },
+            note: { $first: '$note' },
+            phoneNumber: { $first: '$phoneNumber' },
+            createdAt: { $first: '$createdAt' },
+            updatedAt: { $first: '$updatedAt' },
+            items: { $push: '$items' },
+          },
+        },
       ])
       .toArray();
+    return result;
   }
 
   async getOne(orderId: string) {
@@ -358,4 +406,218 @@ export class MongoOrder extends BaseStore<IOrder> {
 
     return result;
   };
+
+  async getStockOrderPaginate(filters: IOrderFilter) {
+    const { paginate, sort } = this.getQuery(filters);
+    const result = await this.collection
+      .aggregate([
+        {
+          $match: {
+            status: { $in: [EOrderStatus.CONFIRM] },
+          },
+        },
+        { $sort: sort },
+        { $unwind: '$items' },
+        {
+          $group: {
+            _id: '$items.productId',
+            totalOrder: { $sum: '$items.quantity' },
+            orderCount: { $sum: 1 },
+          },
+        },
+        {
+          $lookup: {
+            from: 'inventory',
+            localField: '_id',
+            foreignField: 'productId',
+            as: 'inventory',
+          },
+        },
+        {
+          $lookup: {
+            from: 'product',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        {
+          $unwind: {
+            path: '$inventory',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $addFields: {
+            totalInventory: {
+              $ifNull: ['$inventory.quantity', 0], // bỏ $sum
+            },
+            missingQuantity: {
+              $cond: {
+                if: {
+                  $gt: [
+                    '$totalOrder',
+                    {
+                      $ifNull: ['$inventory.quantity', 0],
+                    },
+                  ],
+                },
+                then: {
+                  $subtract: [
+                    '$totalOrder',
+                    {
+                      $ifNull: ['$inventory.quantity', 0],
+                    },
+                  ],
+                },
+                else: 0,
+              },
+            },
+            remainingStock: {
+              $cond: {
+                if: {
+                  $gte: [
+                    {
+                      $ifNull: ['$inventory.quantity', 0],
+                    },
+                    '$totalOrder',
+                  ],
+                },
+                then: {
+                  $subtract: [
+                    {
+                      $ifNull: ['$inventory.quantity', 0],
+                    },
+                    '$totalOrder',
+                  ],
+                },
+                else: 0,
+              },
+            },
+            product: {
+              $arrayElemAt: ['$product', 0],
+            },
+          },
+        },
+        { $project: { inventory: 0 } },
+        {
+          $facet: {
+            data: [{ $skip: paginate.limit * (paginate.page - 1) }, { $limit: paginate.limit }],
+            pageInfo: [{ $count: 'count' }],
+          },
+        },
+      ])
+      .next();
+
+    const data = result?.data ?? [];
+    const totalData = result?.pageInfo[0]?.count ?? 0;
+
+    return {
+      data,
+      totalData,
+      pagination: {
+        limit: paginate.limit,
+        page: paginate.page,
+        totalPages: Math.ceil(totalData / paginate.limit),
+        totalItems: totalData,
+      },
+    };
+  }
+
+  async getStockOrderList(filters: IOrderFilter) {
+    const { sort } = this.getQuery(filters);
+    return await this.collection
+      .aggregate<IStockOrder>([
+        {
+          $match: {
+            status: { $in: [EOrderStatus.CONFIRM] },
+          },
+        },
+        { $sort: sort },
+        { $unwind: '$items' },
+        {
+          $group: {
+            _id: '$items.productId',
+            totalOrder: { $sum: '$items.quantity' },
+            orderCount: { $sum: 1 },
+          },
+        },
+        {
+          $lookup: {
+            from: 'inventory',
+            localField: '_id',
+            foreignField: 'productId',
+            as: 'inventory',
+          },
+        },
+        {
+          $lookup: {
+            from: 'product',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        {
+          $unwind: {
+            path: '$inventory',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $addFields: {
+            totalInventory: {
+              $ifNull: [{ $sum: '$inventory.quantity' }, 0],
+            },
+            missingQuantity: {
+              $cond: {
+                if: {
+                  $gt: [
+                    '$totalOrder',
+                    {
+                      $ifNull: ['$inventory.quantity', 0],
+                    },
+                  ],
+                },
+                then: {
+                  $subtract: [
+                    '$totalOrder',
+                    {
+                      $ifNull: ['$inventory.quantity', 0],
+                    },
+                  ],
+                },
+                else: 0,
+              },
+            },
+            remainingStock: {
+              $cond: {
+                if: {
+                  $gte: [
+                    {
+                      $ifNull: ['$inventory.quantity', 0],
+                    },
+                    '$totalOrder',
+                  ],
+                },
+                then: {
+                  $subtract: [
+                    {
+                      $ifNull: ['$inventory.quantity', 0],
+                    },
+                    '$totalOrder',
+                  ],
+                },
+                else: 0,
+              },
+            },
+            product: {
+              $arrayElemAt: ['$product', 0],
+            },
+          },
+        },
+        { $project: { inventory: 0 } },
+      ])
+      .toArray();
+  }
 }
