@@ -28,5 +28,5 @@ jobs:
             --name qdfood-api-container \
             -p 8000:8000 \
             --restart always \
-            --env-file /root/project/env/.env.api \
+            --env-file /root/project/env/api/.env \
             nhatnguyen0903/qdfood-api:latest
