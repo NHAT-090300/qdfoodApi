@@ -14,6 +14,13 @@ export function initInventorytransaction(api: API) {
     api.handler(authentication(ERole.USER)),
     api.handler(handlers.getPagination),
   );
+
+  api.baseRoutes.inventoryTransaction.get(
+    '/exports',
+    api.handler(authentication(ERole.ADMIN)),
+    api.handler(handlers.exportInventoryTransactionsToExcel),
+  );
+
   api.baseRoutes.inventoryTransaction.get(
     '/:id',
     api.handler(authentication(ERole.USER)),

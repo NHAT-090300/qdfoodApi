@@ -167,3 +167,38 @@ export async function deleteInventoryTransaction(
     next(error);
   }
 }
+
+export async function exportInventoryTransactionsToExcel(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { order, sort } = req.query;
+    const filterObject = tryParseJson(req.query.filters);
+
+    const filters: IInventoryTransactionFilter = {
+      ...filterObject,
+      order,
+      sort,
+    };
+
+    const workbook = await new InventoryTransactionApp(ctx).exportInventoryTransactionsToExcel(
+      filters,
+    );
+
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename=orders.xlsx');
+
+    workbook.xlsx.write(res).then(() => {
+      res.status(200).end();
+    });
+  } catch (err) {
+    next(err);
+  }
+}

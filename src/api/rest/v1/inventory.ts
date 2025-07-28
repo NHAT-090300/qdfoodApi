@@ -14,11 +14,18 @@ export function initInventory(api: API) {
     api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.createManyInventory),
   );
+
+  api.baseRoutes.inventory.get(
+    '/exports',
+    api.handler(authentication(ERole.ADMIN)),
+    api.handler(handlers.exportInventoryToExcel),
+  );
   api.baseRoutes.inventory.get(
     '/',
     api.handler(authentication(ERole.USER)),
     api.handler(handlers.getPagination),
   );
+
   api.baseRoutes.inventory.get(
     '/:id',
     api.handler(authentication(ERole.USER)),

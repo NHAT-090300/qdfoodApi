@@ -1,6 +1,5 @@
 import { ObjectId } from 'mongodb';
-import { ESortOrder, EInventoryTransactionType } from './enum';
-import { IProduct } from './product';
+import { EInventoryTransactionType, ESortOrder } from './enum';
 
 export interface IInventoryTransaction {
   _id?: ObjectId;
@@ -19,6 +18,7 @@ export interface IInventoryTransaction {
 
 export interface IInventoryTransactionFilter {
   keyword?: string;
+  keywordProduct?: string;
   ids?: string[];
   page?: number;
   limit?: number;

@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { ESortOrder, EOrderStatus } from './enum';
 import { IUser } from './user';
+import { IProduct } from './product';
 
 export interface IOrder {
   _id?: ObjectId;
@@ -52,4 +53,15 @@ export interface IOrderFilter {
 
 export interface IOrderWithUser extends IOrder {
   user?: IUser;
+  product: IProduct;
+}
+
+export interface IStockOrder {
+  _id: string;
+  totalOrder: number;
+  orderCount: number;
+  totalInventory: number;
+  missingQuantity: number;
+  remainingStock: number;
+  product: IProduct;
 }

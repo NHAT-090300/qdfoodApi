@@ -9,6 +9,13 @@ export function initOrder(api: API) {
     api.handler(authentication(ERole.USER)),
     api.handler(handlers.getSummary),
   );
+
+  api.baseRoutes.order.get(
+    '/stock-order',
+    api.handler(authentication(ERole.ADMIN)),
+    api.handler(handlers.getStockOrderPaginate),
+  );
+
   api.baseRoutes.order.post(
     '/create/web_user',
     api.handler(authentication(ERole.USER)),
@@ -64,5 +71,17 @@ export function initOrder(api: API) {
     '/:id/updateOrderItem',
     api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.updateOrderItemRefund),
+  );
+
+  api.baseRoutes.order.get(
+    '/export/missing',
+    api.handler(authentication(ERole.ADMIN)),
+    api.handler(handlers.exportMissingProducts),
+  );
+
+  api.baseRoutes.order.get(
+    '/export/order-detail/:id',
+    api.handler(authentication(ERole.ADMIN)),
+    api.handler(handlers.exportOrderDetailsToExcel),
   );
 }

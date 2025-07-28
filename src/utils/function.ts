@@ -1,4 +1,4 @@
-import { EOrderStatus, IErrors, IOrderShippingAddress } from 'interface';
+import { EInventoryTransactionType, EOrderStatus, IErrors, IOrderShippingAddress } from 'interface';
 import { ObjectId } from 'mongodb';
 import fs from 'fs';
 import { logger } from 'logger';
@@ -256,4 +256,23 @@ export const OrderStatus = [
 
 export const findOrderWithStatus = (status: EOrderStatus) => {
   return OrderStatus.find((o) => o.key === status);
+};
+
+export const getTransactionTypeTag = (type: EInventoryTransactionType) => {
+  const typeMap: Record<EInventoryTransactionType, { color: string; text: string }> = {
+    [EInventoryTransactionType.IMPORT]: {
+      color: 'cyan',
+      text: 'Nhập kho',
+    },
+    [EInventoryTransactionType.EXPORT]: {
+      color: 'geekblue',
+      text: 'Xuất kho',
+    },
+    [EInventoryTransactionType.RETURN_DAMAGED]: {
+      color: 'volcano',
+      text: 'Hoàn trả',
+    },
+  };
+
+  return typeMap[type] || { color: 'default', text: 'Không xác định' };
 };
