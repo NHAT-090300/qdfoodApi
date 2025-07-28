@@ -13,8 +13,8 @@ jobs:
     steps:
       - name: Clean up unused Docker images
         run: |
-          sudo docker image prune -f
-          sudo docker image prune -a -f
+          sudo docker container prune -f || true
+          sudo docker image prune -af || true
 
       - name: Pull Docker image
         run: sudo docker pull nhatnguyen0903/qdfood-api:latest
@@ -24,6 +24,9 @@ jobs:
 
       - name: Run Docker container
         run: |
-          sudo docker run -d -p 8000:8000 \
+          sudo docker run -d \
             --name qdfood-api-container \
-            nhatnguyen0903/qdfood-api
+            -p 8000:8000 \
+            --restart always \
+            --env-file /root/project/env/.env.api \
+            nhatnguyen0903/qdfood-api:latest

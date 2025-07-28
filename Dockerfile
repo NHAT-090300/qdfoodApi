@@ -8,7 +8,7 @@ RUN yarn install --frozen-lockfile
 COPY . .
 
 # Copy file env.production thành .env bên trong container
-COPY .env.production .env
+# COPY .env.production .env
 
 RUN yarn build
 
