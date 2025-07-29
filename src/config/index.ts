@@ -6,7 +6,7 @@ dotenv.config();
 export const config: IConfig = {
   serviceSettings: {
     serviceName: process.env.SERVICE_NAME || 'qdfood',
-    httpPort: parseInt(process.env.HTTP_PORT || '9000', 10),
+    httpPort: parseInt(process.env.HTTP_PORT || '8000', 10),
     apiPrefix: process.env.API_PREFIX || '/qdfood/api',
     shouldSeedDb: process.env.SEED_DB === 'true',
   },
