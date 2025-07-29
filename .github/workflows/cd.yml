@@ -29,4 +29,5 @@ jobs:
             -p 8000:8000 \
             --restart always \
             --env-file /root/project/env/api/.env \
+            --network=npm-network \
             nhatnguyen0903/qdfood-api:latest
