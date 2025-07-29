@@ -2,6 +2,8 @@ import { config } from 'config';
 import { logger } from 'logger';
 import { Server } from 'server';
 
+console.log('ENV:', process.env);
+
 async function main() {
   const server = new Server(config);
 
