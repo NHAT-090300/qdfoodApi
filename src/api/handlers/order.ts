@@ -578,3 +578,23 @@ export async function exportOrderDetailsToExcel(
     next(err);
   }
 }
+
+export async function exportOrderDetailPDF(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { orderId } = req.params;
+
+    const pdfBuffer = await new OrderApp(ctx).exportOrderDetailsToPDF(orderId);
+
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=phieu-giao-hang-${orderId}.pdf`);
+    res.status(200).send(pdfBuffer);
+  } catch (err) {
+    next(err);
+  }
+}

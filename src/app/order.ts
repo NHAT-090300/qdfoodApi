@@ -537,6 +537,22 @@ export class OrderApp extends BaseApp {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Chi tiết đơn hàng');
 
+    // Thêm tiêu đề phiếu ở đầu file
+    worksheet.mergeCells('A1:L1');
+    worksheet.getCell('A1').value = 'PHIẾU GIAO HÀNG';
+    worksheet.getCell('A1').font = { bold: true, size: 16 };
+    worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Thêm thông tin công ty (tùy bạn thay đổi)
+    worksheet.mergeCells('A2:L2');
+    worksheet.getCell('A2').value = 'CÔNG TY TNHH THỰC PHẨM QUẢNG ĐÀ';
+    worksheet.getCell('A2').font = { italic: true, size: 12 };
+    worksheet.getCell('A2').alignment = { horizontal: 'center' };
+
+    // Thêm ngày tháng
+    worksheet.mergeCells('A3:L3');
+    worksheet.getCell('A3').value = `Ngày lập: ${new Date().toLocaleDateString('vi-VN')}`;
+    worksheet.getCell('A3').alignment = { horizontal: 'center' };
     // Header row
     worksheet.addRow(['Tên hàng', 'Mã sản phẩm', 'Số lượng', 'Đơn giá', 'Thành tiền']);
 
@@ -551,6 +567,29 @@ export class OrderApp extends BaseApp {
         right: { style: 'thin' },
       };
     });
+
+    // Tính dòng cuối cùng sau khi thêm đơn hàng
+    const lastRowNumber = worksheet.lastRow?.number || 0;
+
+    worksheet.addRow([]); // dòng trống
+    worksheet.mergeCells(`A${lastRowNumber + 2}:C${lastRowNumber + 2}`);
+    worksheet.getCell(`A${lastRowNumber + 2}`).value = 'Người giao hàng';
+    worksheet.getCell(`A${lastRowNumber + 2}`).alignment = { horizontal: 'center' };
+
+    worksheet.mergeCells(`J${lastRowNumber + 2}:L${lastRowNumber + 2}`);
+    worksheet.getCell(`J${lastRowNumber + 2}`).value = 'Người nhận hàng';
+    worksheet.getCell(`J${lastRowNumber + 2}`).alignment = { horizontal: 'center' };
+
+    // Thêm ghi chú ký tên
+    worksheet.mergeCells(`A${lastRowNumber + 3}:C${lastRowNumber + 3}`);
+    worksheet.getCell(`A${lastRowNumber + 3}`).value = '(ký, và ghi rõ họ tên)';
+    worksheet.getCell(`A${lastRowNumber + 3}`).font = { italic: true };
+    worksheet.getCell(`A${lastRowNumber + 3}`).alignment = { horizontal: 'center' };
+
+    worksheet.mergeCells(`J${lastRowNumber + 3}:L${lastRowNumber + 3}`);
+    worksheet.getCell(`J${lastRowNumber + 3}`).value = '(ký, và ghi rõ họ tên)';
+    worksheet.getCell(`J${lastRowNumber + 3}`).font = { italic: true };
+    worksheet.getCell(`J${lastRowNumber + 3}`).alignment = { horizontal: 'center' };
 
     const order = await this.getStore().order().getOne(orderId);
 
@@ -580,5 +619,63 @@ export class OrderApp extends BaseApp {
     });
 
     return workbook;
+  }
+
+  async exportOrderDetailsToPDF(orderId: string): Promise<Buffer> {
+    const order = await this.getStore().order().getOne(orderId);
+
+    const doc = new jsPDF();
+
+    // Tiêu đề
+    doc.setFontSize(16);
+    doc.text('PHIẾU GIAO HÀNG', 105, 15, { align: 'center' });
+
+    // Công ty
+    doc.setFontSize(12);
+    doc.text('CÔNG TY TNHH THỰC PHẨM QUẢNG ĐÀ', 105, 23, { align: 'center' });
+
+    // Ngày lập
+    doc.text(`Ngày lập: ${new Date().toLocaleDateString('vi-VN')}`, 105, 30, { align: 'center' });
+
+    // Chuẩn bị dữ liệu bảng
+    const tableBody: any[] = [];
+
+    order?.items?.forEach((item: any) => {
+      const quantity = Number(item.quantity) || 0;
+      const unitPrice = Number(item.unitPrice) || 0;
+      const total = quantity * unitPrice;
+
+      tableBody.push([
+        item.name ?? 'Không có tên',
+        item.code ?? '---',
+        quantity,
+        unitPrice.toLocaleString('vi-VN'),
+        total.toLocaleString('vi-VN'),
+      ]);
+    });
+
+    // Vẽ bảng
+    autoTable(doc, {
+      startY: 40,
+      head: [['Tên hàng', 'Mã sản phẩm', 'Số lượng', 'Đơn giá', 'Thành tiền']],
+      body: tableBody,
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [22, 160, 133] },
+      theme: 'grid',
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY || 50;
+
+    // Ký tên
+    doc.setFontSize(11);
+    doc.text('Người giao hàng', 40, finalY + 20, { align: 'center' });
+    doc.text('Người nhận hàng', 170, finalY + 20, { align: 'center' });
+
+    doc.setFontSize(9);
+    doc.text('(ký, và ghi rõ họ tên)', 40, finalY + 26, { align: 'center' });
+    doc.text('(ký, và ghi rõ họ tên)', 170, finalY + 26, { align: 'center' });
+
+    const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+    return pdfBuffer;
   }
 }

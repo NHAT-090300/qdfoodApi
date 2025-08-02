@@ -89,4 +89,9 @@ export function initOrder(api: API) {
     api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.exportOrderDetailsToExcel),
   );
+  api.baseRoutes.order.get(
+    '/export/pdf/order-detail/:id',
+    api.handler(authentication(ERole.ADMIN)),
+    api.handler(handlers.exportOrderDetailsToExcel),
+  );
 }
