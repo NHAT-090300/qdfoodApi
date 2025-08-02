@@ -242,7 +242,7 @@ export class OrderApp extends BaseApp {
 
       // Title
       worksheet.mergeCells('A1:L1');
-      worksheet.getCell('A1').value = 'PHIẾU GIAO HÀNG';
+      worksheet.getCell('A1').value = 'THỐNG KÊ ĐƠN HÀNG';
       worksheet.getCell('A1').font = { bold: true, size: 16 };
       worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
 
@@ -368,7 +368,7 @@ export class OrderApp extends BaseApp {
 
     // Title
     doc.setFontSize(16);
-    doc.text('PHIẾU GIAO HÀNG', 105, 15, { align: 'center' });
+    doc.text('THỐNG KÊ ĐƠN HÀNG', 105, 15, { align: 'center' });
 
     doc.setFontSize(12);
     doc.text('CÔNG TY TNHH THỰC PHẨM QUẢNG ĐÀ', 105, 23, { align: 'center' });
