@@ -428,6 +428,37 @@ export async function exportOrders(
   }
 }
 
+export async function exportOrdersPDF(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { order, sort } = req.query;
+    const filterObject = tryParseJson(req.query.filters);
+
+    const filters: IOrderFilter = {
+      ...filterObject,
+      order,
+      sort,
+    };
+
+    const pdfBuffer = await new OrderApp(ctx).exportOrdersToPDF(filters);
+
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="phieu-giao-hang-${Date.now()}.pdf"`,
+    );
+
+    res.status(200).send(pdfBuffer);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function updateOrderItemRefund(
   ctx: Context,
   req: Request,

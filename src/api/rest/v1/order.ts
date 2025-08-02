@@ -27,6 +27,11 @@ export function initOrder(api: API) {
     api.handler(handlers.exportOrders),
   );
   api.baseRoutes.order.get(
+    '/exports/pdf',
+    api.handler(authentication(ERole.ADMIN)),
+    api.handler(handlers.exportOrdersPDF),
+  );
+  api.baseRoutes.order.get(
     '/list/web_user',
     api.handler(authentication(ERole.USER)),
     api.handler(handlers.getAll),
