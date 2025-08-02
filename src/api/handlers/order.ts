@@ -42,7 +42,7 @@ export async function createOrderUser(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { shippingAddress, items, note, phoneNumber, paymentMethod } = req.body;
+    const { shippingAddress, items, note, phoneNumber, paymentMethod, name } = req.body;
 
     const userId = req.user?._id;
 
@@ -168,10 +168,11 @@ export async function createOrderUser(
       });
     }
 
-    if (!oldUser.phoneNumber || !oldUser.address) {
+    if (!oldUser.phoneNumber || !oldUser.address || !oldUser.name) {
       await new UserApp(ctx).update(userId, {
         ...oldUser,
         phoneNumber: oldUser.phoneNumber || phoneNumber,
+        name: oldUser.name || name,
         address: oldUser.address || shippingAddress,
       });
     }
