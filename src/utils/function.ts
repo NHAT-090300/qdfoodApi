@@ -276,3 +276,11 @@ export const getTransactionTypeTag = (type: EInventoryTransactionType) => {
 
   return typeMap[type] || { color: 'default', text: 'Không xác định' };
 };
+
+export function removeVietnameseTones(str: string): string {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D');
+}

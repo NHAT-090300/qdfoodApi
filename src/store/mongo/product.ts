@@ -1,10 +1,11 @@
+import { ESortOrder, IProduct, IProductFilter } from 'interface';
 import { escapeRegExp, isNumber } from 'lodash';
+import { logger } from 'logger';
+import { Product } from 'model';
 import { ClientSession, Db, ObjectId } from 'mongodb';
 import slugify from 'slugify';
-import { logger } from 'logger';
+import { removeVietnameseTones } from 'utils';
 
-import { ESortOrder, IProduct, IProductFilter } from 'interface';
-import { Product } from 'model';
 import { BaseStore } from './base';
 
 export class MongoProduct extends BaseStore<IProduct> {
@@ -76,7 +77,8 @@ export class MongoProduct extends BaseStore<IProduct> {
     }
 
     if (filters.keyword && !ObjectId.isValid(filters?.keyword)) {
-      const regex = new RegExp(escapeRegExp(filters.keyword), 'i');
+      const keywordUnsigned = removeVietnameseTones(filters.keyword);
+      const regex = new RegExp(escapeRegExp(keywordUnsigned), 'i');
       condition.$or = [{ name: { $regex: regex } }];
     }
 
