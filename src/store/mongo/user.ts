@@ -85,7 +85,11 @@ export class MongoUser extends BaseStore<IUser> {
         {
           $sort: sort,
         },
-        { $project: this.getProject() },
+        {
+          $project: this.getProject({
+            address: 1,
+          }),
+        },
         {
           $facet: {
             data: [{ $skip: paginate.limit * (paginate.page - 1) }, { $limit: paginate.limit }],
