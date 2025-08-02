@@ -239,24 +239,24 @@ export class OrderApp extends BaseApp {
     try {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('orders');
-      // Thêm tiêu đề phiếu ở đầu file
+
+      // Title
       worksheet.mergeCells('A1:L1');
       worksheet.getCell('A1').value = 'PHIẾU GIAO HÀNG';
       worksheet.getCell('A1').font = { bold: true, size: 16 };
       worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
 
-      // Thêm thông tin công ty (tùy bạn thay đổi)
       worksheet.mergeCells('A2:L2');
       worksheet.getCell('A2').value = 'CÔNG TY TNHH THỰC PHẨM QUẢNG ĐÀ';
       worksheet.getCell('A2').font = { italic: true, size: 12 };
       worksheet.getCell('A2').alignment = { horizontal: 'center' };
 
-      // Thêm ngày tháng
       worksheet.mergeCells('A3:L3');
       worksheet.getCell('A3').value = `Ngày lập: ${new Date().toLocaleDateString('vi-VN')}`;
       worksheet.getCell('A3').alignment = { horizontal: 'center' };
-      // Header
-      worksheet.addRow([
+
+      // Header row (row 4)
+      const headerRow = worksheet.addRow([
         'Mã Đơn Hàng',
         'Tên Khách Hàng',
         'Email',
@@ -271,8 +271,7 @@ export class OrderApp extends BaseApp {
         'Trạng Thái',
       ]);
 
-      // Format header
-      worksheet.getRow(1).eachCell((cell) => {
+      headerRow.eachCell((cell) => {
         cell.font = { bold: true, size: 12 };
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
         cell.border = {
@@ -282,29 +281,6 @@ export class OrderApp extends BaseApp {
           right: { style: 'thin' },
         };
       });
-
-      // Tính dòng cuối cùng sau khi thêm đơn hàng
-      const lastRowNumber = worksheet.lastRow?.number || 0;
-
-      worksheet.addRow([]); // dòng trống
-      worksheet.mergeCells(`A${lastRowNumber + 2}:C${lastRowNumber + 2}`);
-      worksheet.getCell(`A${lastRowNumber + 2}`).value = 'Người giao hàng';
-      worksheet.getCell(`A${lastRowNumber + 2}`).alignment = { horizontal: 'center' };
-
-      worksheet.mergeCells(`J${lastRowNumber + 2}:L${lastRowNumber + 2}`);
-      worksheet.getCell(`J${lastRowNumber + 2}`).value = 'Người nhận hàng';
-      worksheet.getCell(`J${lastRowNumber + 2}`).alignment = { horizontal: 'center' };
-
-      // Thêm ghi chú ký tên
-      worksheet.mergeCells(`A${lastRowNumber + 3}:C${lastRowNumber + 3}`);
-      worksheet.getCell(`A${lastRowNumber + 3}`).value = '(ký, và ghi rõ họ tên)';
-      worksheet.getCell(`A${lastRowNumber + 3}`).font = { italic: true };
-      worksheet.getCell(`A${lastRowNumber + 3}`).alignment = { horizontal: 'center' };
-
-      worksheet.mergeCells(`J${lastRowNumber + 3}:L${lastRowNumber + 3}`);
-      worksheet.getCell(`J${lastRowNumber + 3}`).value = '(ký, và ghi rõ họ tên)';
-      worksheet.getCell(`J${lastRowNumber + 3}`).font = { italic: true };
-      worksheet.getCell(`J${lastRowNumber + 3}`).alignment = { horizontal: 'center' };
 
       const orders = await this.getStore().order().getList(filters);
 
@@ -349,6 +325,28 @@ export class OrderApp extends BaseApp {
         }
       });
 
+      // Tính lại dòng cuối cùng sau khi add toàn bộ dữ liệu
+      const lastRowNumber = worksheet.lastRow?.number || 0;
+
+      worksheet.addRow([]); // Dòng trống
+      worksheet.mergeCells(`A${lastRowNumber + 2}:C${lastRowNumber + 2}`);
+      worksheet.getCell(`A${lastRowNumber + 2}`).value = 'Người giao hàng';
+      worksheet.getCell(`A${lastRowNumber + 2}`).alignment = { horizontal: 'center' };
+
+      worksheet.mergeCells(`J${lastRowNumber + 2}:L${lastRowNumber + 2}`);
+      worksheet.getCell(`J${lastRowNumber + 2}`).value = 'Người nhận hàng';
+      worksheet.getCell(`J${lastRowNumber + 2}`).alignment = { horizontal: 'center' };
+
+      worksheet.mergeCells(`A${lastRowNumber + 3}:C${lastRowNumber + 3}`);
+      worksheet.getCell(`A${lastRowNumber + 3}`).value = '(ký, và ghi rõ họ tên)';
+      worksheet.getCell(`A${lastRowNumber + 3}`).font = { italic: true };
+      worksheet.getCell(`A${lastRowNumber + 3}`).alignment = { horizontal: 'center' };
+
+      worksheet.mergeCells(`J${lastRowNumber + 3}:L${lastRowNumber + 3}`);
+      worksheet.getCell(`J${lastRowNumber + 3}`).value = '(ký, và ghi rõ họ tên)';
+      worksheet.getCell(`J${lastRowNumber + 3}`).font = { italic: true };
+      worksheet.getCell(`J${lastRowNumber + 3}`).alignment = { horizontal: 'center' };
+
       worksheet.columns.forEach((column) => {
         column.width = 25;
       });
@@ -356,20 +354,19 @@ export class OrderApp extends BaseApp {
       return workbook;
     } catch (error: any) {
       throw new AppError({
-        id: `${where}.exportOrders`,
+        id: `order.exportOrders`,
         message: 'Xuất báo cáo đơn hàng thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         detail: error,
       });
     }
   }
-
   async exportOrdersToPDF(filters: IOrderFilter) {
     const orders = await this.getStore().order().getList(filters);
 
     const doc = new jsPDF();
 
-    // Tiêu đề
+    // Title
     doc.setFontSize(16);
     doc.text('PHIẾU GIAO HÀNG', 105, 15, { align: 'center' });
 
@@ -398,8 +395,8 @@ export class OrderApp extends BaseApp {
             item.code || '---',
             item.name || '',
             item.quantity,
-            formatCurrency(item.price),
-            formatCurrency(item.price * item.quantity),
+            formatCurrency(Number(item.price)),
+            formatCurrency(Number(item.price) * item.quantity),
             totalOrderAmount,
             statusLabel,
           ]);
@@ -426,23 +423,22 @@ export class OrderApp extends BaseApp {
         ],
       ],
       body: tableBody,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [22, 160, 133] }, // màu xanh
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [22, 160, 133], halign: 'center' },
       theme: 'grid',
     });
 
-    // Ký tên
-    const finalY = (doc as any).lastAutoTable.finalY || 35;
+    const finalY = (doc as any).lastAutoTable.finalY || 40;
 
     doc.setFontSize(11);
-    doc.text('Người giao hàng', 25, finalY + 20, { align: 'center' });
-    doc.text('Người nhận hàng', 180, finalY + 20, { align: 'center' });
+    doc.text('Người giao hàng', 40, finalY + 20, { align: 'center' });
+    doc.text('Người nhận hàng', 170, finalY + 20, { align: 'center' });
 
     doc.setFontSize(9);
-    doc.text('(ký, và ghi rõ họ tên)', 25, finalY + 26, { align: 'center' });
-    doc.text('(ký, và ghi rõ họ tên)', 180, finalY + 26, { align: 'center' });
+    doc.text('(ký, và ghi rõ họ tên)', 40, finalY + 26, { align: 'center' });
+    doc.text('(ký, và ghi rõ họ tên)', 170, finalY + 26, { align: 'center' });
 
-    // Xuất file
+    // Xuất file (dành cho phía frontend hoặc viết buffer ở backend nếu dùng ở server)
     doc.save(`phieu-giao-hang-${Date.now()}.pdf`);
   }
 
@@ -537,27 +533,25 @@ export class OrderApp extends BaseApp {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Chi tiết đơn hàng');
 
-    // Thêm tiêu đề phiếu ở đầu file
-    worksheet.mergeCells('A1:L1');
+    // Thêm tiêu đề phiếu
+    worksheet.mergeCells('A1:E1');
     worksheet.getCell('A1').value = 'PHIẾU GIAO HÀNG';
     worksheet.getCell('A1').font = { bold: true, size: 16 };
     worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
 
-    // Thêm thông tin công ty (tùy bạn thay đổi)
-    worksheet.mergeCells('A2:L2');
+    worksheet.mergeCells('A2:E2');
     worksheet.getCell('A2').value = 'CÔNG TY TNHH THỰC PHẨM QUẢNG ĐÀ';
     worksheet.getCell('A2').font = { italic: true, size: 12 };
     worksheet.getCell('A2').alignment = { horizontal: 'center' };
 
-    // Thêm ngày tháng
-    worksheet.mergeCells('A3:L3');
+    worksheet.mergeCells('A3:E3');
     worksheet.getCell('A3').value = `Ngày lập: ${new Date().toLocaleDateString('vi-VN')}`;
     worksheet.getCell('A3').alignment = { horizontal: 'center' };
-    // Header row
+
+    // Header bảng
     worksheet.addRow(['Tên hàng', 'Mã sản phẩm', 'Số lượng', 'Đơn giá', 'Thành tiền']);
 
-    // Format header
-    worksheet.getRow(1).eachCell((cell) => {
+    worksheet.getRow(4).eachCell((cell) => {
       cell.font = { bold: true, size: 12 };
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
       cell.border = {
@@ -568,39 +562,15 @@ export class OrderApp extends BaseApp {
       };
     });
 
-    // Tính dòng cuối cùng sau khi thêm đơn hàng
-    const lastRowNumber = worksheet.lastRow?.number || 0;
-
-    worksheet.addRow([]); // dòng trống
-    worksheet.mergeCells(`A${lastRowNumber + 2}:C${lastRowNumber + 2}`);
-    worksheet.getCell(`A${lastRowNumber + 2}`).value = 'Người giao hàng';
-    worksheet.getCell(`A${lastRowNumber + 2}`).alignment = { horizontal: 'center' };
-
-    worksheet.mergeCells(`J${lastRowNumber + 2}:L${lastRowNumber + 2}`);
-    worksheet.getCell(`J${lastRowNumber + 2}`).value = 'Người nhận hàng';
-    worksheet.getCell(`J${lastRowNumber + 2}`).alignment = { horizontal: 'center' };
-
-    // Thêm ghi chú ký tên
-    worksheet.mergeCells(`A${lastRowNumber + 3}:C${lastRowNumber + 3}`);
-    worksheet.getCell(`A${lastRowNumber + 3}`).value = '(ký, và ghi rõ họ tên)';
-    worksheet.getCell(`A${lastRowNumber + 3}`).font = { italic: true };
-    worksheet.getCell(`A${lastRowNumber + 3}`).alignment = { horizontal: 'center' };
-
-    worksheet.mergeCells(`J${lastRowNumber + 3}:L${lastRowNumber + 3}`);
-    worksheet.getCell(`J${lastRowNumber + 3}`).value = '(ký, và ghi rõ họ tên)';
-    worksheet.getCell(`J${lastRowNumber + 3}`).font = { italic: true };
-    worksheet.getCell(`J${lastRowNumber + 3}`).alignment = { horizontal: 'center' };
-
     const order = await this.getStore().order().getOne(orderId);
 
-    // Add rows from order items
+    // Add item rows
     order?.items?.forEach((item: any) => {
       const quantity = Number(item.quantity) || 0;
       const unitPrice = Number(item.unitPrice) || 0;
       const total = quantity * unitPrice;
 
       const row = [item.name ?? 'Không có tên', item.code ?? '---', quantity, unitPrice, total];
-
       const rowRef = worksheet.addRow(row);
 
       rowRef.eachCell((cell) => {
@@ -617,6 +587,34 @@ export class OrderApp extends BaseApp {
     worksheet.columns.forEach((column) => {
       column.width = 20;
     });
+
+    // Lấy số dòng cuối cùng sau khi thêm dữ liệu
+    const lastRowNum = worksheet.lastRow?.number || 0;
+    worksheet.addRow([]); // dòng trống
+
+    // Chèn chữ ký nằm hai bên của bảng, sát dưới bảng
+    const signRowNum = lastRowNum + 2;
+
+    // Người giao hàng (bên trái)
+    worksheet.mergeCells(`A${signRowNum}:B${signRowNum}`);
+    worksheet.getCell(`A${signRowNum}`).value = 'Người giao hàng';
+    worksheet.getCell(`A${signRowNum}`).alignment = { horizontal: 'center' };
+
+    // Người nhận hàng (bên phải)
+    worksheet.mergeCells(`D${signRowNum}:E${signRowNum}`);
+    worksheet.getCell(`D${signRowNum}`).value = 'Người nhận hàng';
+    worksheet.getCell(`D${signRowNum}`).alignment = { horizontal: 'center' };
+
+    // Dòng ghi chú ký tên
+    worksheet.mergeCells(`A${signRowNum + 1}:B${signRowNum + 1}`);
+    worksheet.getCell(`A${signRowNum + 1}`).value = '(ký, và ghi rõ họ tên)';
+    worksheet.getCell(`A${signRowNum + 1}`).font = { italic: true };
+    worksheet.getCell(`A${signRowNum + 1}`).alignment = { horizontal: 'center' };
+
+    worksheet.mergeCells(`D${signRowNum + 1}:E${signRowNum + 1}`);
+    worksheet.getCell(`D${signRowNum + 1}`).value = '(ký, và ghi rõ họ tên)';
+    worksheet.getCell(`D${signRowNum + 1}`).font = { italic: true };
+    worksheet.getCell(`D${signRowNum + 1}`).alignment = { horizontal: 'center' };
 
     return workbook;
   }
