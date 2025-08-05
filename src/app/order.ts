@@ -58,6 +58,21 @@ export class OrderApp extends BaseApp {
     }
   }
 
+  async getUserDebt(filters: IOrderFilter) {
+    try {
+      const result = await this.getStore().order().getUserDebt(filters);
+
+      return result;
+    } catch (error: any) {
+      throw new AppError({
+        id: `${where}.getStockOrderPaginate`,
+        message: 'Lấy danh sách order thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+
   async getStockOrderList(filters: IOrderFilter) {
     try {
       return await this.getStore().order().getStockOrderList(filters);
@@ -192,6 +207,8 @@ export class OrderApp extends BaseApp {
     data: {
       status: EOrderStatus;
       reason?: string;
+      paymentVerifierId?: string;
+      unpaidAmount?: number;
     },
   ) {
     try {
@@ -222,9 +239,20 @@ export class OrderApp extends BaseApp {
           await this.getStore().inventoryTransaction().createOne(transaction);
         }
       }
+
+      const updateData: any = {
+        ...data,
+        ...(data.paymentVerifierId && {
+          paymentVerifierId: new ObjectId(data.paymentVerifierId),
+        }),
+        ...(data.unpaidAmount && {
+          unpaidAmount: Number(data?.unpaidAmount),
+        }),
+      };
+
       await this.getStore()
         .order()
-        .baseUpdate({ _id: new ObjectId(orderId) }, { $set: data });
+        .baseUpdate({ _id: new ObjectId(orderId) }, { $set: updateData });
     } catch (error: any) {
       throw new AppError({
         id: `${where}.updateStatus`,
@@ -675,5 +703,61 @@ export class OrderApp extends BaseApp {
 
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
     return pdfBuffer;
+  }
+
+  async exportUserDebtToExcel() {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Người dùng đang nợ');
+
+    // Header
+    worksheet.addRow([
+      'Tên người dùng',
+      'Email',
+      'Số điện thoại',
+      'Tổng số đơn hàng đang nợ',
+      'Tổng số tiền bị nợ',
+    ]);
+
+    worksheet.getRow(1).eachCell((cell) => {
+      cell.font = { bold: true, size: 12 };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+    });
+
+    const userDebtList = await this.getStore().order().getUserDebtList();
+
+    userDebtList.forEach((item: any) => {
+      const { user, totalOrder, totalDebt } = item;
+      const row = [
+        user?.name ?? 'Không có tên',
+        user?.email ?? '---',
+        user?.phone ?? '---',
+        totalOrder || 0,
+        totalDebt || 0,
+      ];
+
+      const rowRef = worksheet.addRow(row);
+
+      rowRef.eachCell((cell) => {
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+    });
+
+    worksheet.columns.forEach((column) => {
+      column.width = 25;
+    });
+
+    return workbook;
   }
 }

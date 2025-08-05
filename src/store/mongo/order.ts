@@ -9,6 +9,7 @@ import {
   IOrderItem,
   IOrderWithUser,
   IStockOrder,
+  IUser,
 } from 'interface';
 import { Order } from 'model';
 import { BaseStore } from './base';
@@ -353,6 +354,8 @@ export class MongoOrder extends BaseStore<IOrder> {
             shippingAddress: { $first: '$shippingAddress' },
             createdAt: { $first: '$createdAt' },
             updatedAt: { $first: '$updatedAt' },
+            unpaidAmount: { $first: '$unpaidAmount' },
+            paymentVerifierId: { $first: '$unpaidAmount' },
             items: {
               $push: '$items',
             },
@@ -617,6 +620,114 @@ export class MongoOrder extends BaseStore<IOrder> {
           },
         },
         { $project: { inventory: 0 } },
+      ])
+      .toArray();
+  }
+
+  async getUserDebt(filters: IOrderFilter) {
+    const { paginate } = this.getQuery(filters);
+    const result = await this.collection
+      .aggregate([
+        {
+          $match: {
+            status: { $in: [EOrderStatus.DEBT] },
+          },
+        },
+        {
+          $group: {
+            _id: '$userId',
+            totalDebt: { $sum: '$unpaidAmount' },
+            totalOrder: { $sum: 1 },
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'user',
+          },
+        },
+        {
+          $addFields: {
+            user: { $arrayElemAt: ['$user', 0] },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            userId: '$_id',
+            totalDebt: 1,
+            totalOrder: 1,
+            user: 1,
+          },
+        },
+        {
+          $facet: {
+            data: [{ $skip: paginate.limit * (paginate.page - 1) }, { $limit: paginate.limit }],
+            pageInfo: [{ $count: 'count' }],
+          },
+        },
+      ])
+      .next();
+
+    const data = result?.data ?? [];
+    const totalData = result?.pageInfo[0]?.count ?? 0;
+
+    return {
+      data,
+      totalData,
+      pagination: {
+        limit: paginate.limit,
+        page: paginate.page,
+        totalPages: Math.ceil(totalData / paginate.limit),
+        totalItems: totalData,
+      },
+    };
+  }
+
+  async getUserDebtList() {
+    return await this.collection
+      .aggregate<{
+        userId: string;
+        totalDebt: number;
+        totalOrder: number;
+        user: IUser;
+      }>([
+        {
+          $match: {
+            status: { $in: [EOrderStatus.DEBT] },
+          },
+        },
+        {
+          $group: {
+            _id: '$userId',
+            totalDebt: { $sum: '$unpaidAmount' },
+            totalOrder: { $sum: 1 },
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'user',
+          },
+        },
+        {
+          $addFields: {
+            user: { $arrayElemAt: ['$user', 0] },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            userId: '$_id',
+            totalDebt: 1,
+            totalOrder: 1,
+            user: 1,
+          },
+        },
       ])
       .toArray();
   }
