@@ -33,6 +33,8 @@ export class Order implements IOrder {
   phoneNumber?: string;
   createdAt?: Date;
   updatedAt?: Date;
+  paymentVerifierId?: ObjectId;
+  unpaidAmount?: number;
 
   constructor(data: IOrder) {
     this._id = data._id;
@@ -44,6 +46,8 @@ export class Order implements IOrder {
     this.paymentMethod = data.paymentMethod;
     this.note = data.note;
     this.phoneNumber = data.phoneNumber;
+    this.paymentVerifierId = data.paymentVerifierId;
+    this.unpaidAmount = data.unpaidAmount || 0;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
   }
@@ -79,6 +83,8 @@ export class Order implements IOrder {
       paymentMethod: yup.string().oneOf(Object.values(EPaymentMethod)),
       note: yup.string(),
       phoneNumber: yup.string(),
+      paymentVerifierId: yup.string().objectId(),
+      unpaidAmount: yup.number().default(0),
     });
     const [errors, result] = await to(validateWithYup(schema, data));
 
@@ -89,6 +95,9 @@ export class Order implements IOrder {
     return new Order({
       ...result,
       userId: new ObjectId(result.userId),
+      paymentVerifierId: result?.paymentVerifierId
+        ? new ObjectId(result?.paymentVerifierId)
+        : undefined,
       items: (result?.items as any[])?.map((item: IOrderItem) => ({
         ...item,
         productId: new ObjectId(item.productId),

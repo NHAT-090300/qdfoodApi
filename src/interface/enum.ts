@@ -26,6 +26,8 @@ export enum EOrderStatus {
   COMPLETED = 'COMPLETED',
   CANCELED = 'CANCELED',
   CONFIRM = 'CONFIRM',
+  PAID = 'PAID',
+  DEBT = 'DEBT',
 }
 
 export enum EInventoryTransactionType {

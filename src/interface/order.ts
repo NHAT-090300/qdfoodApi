@@ -17,6 +17,8 @@ export interface IOrder {
   isDelivered?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+  paymentVerifierId?: ObjectId | undefined;
+  unpaidAmount?: number;
 }
 
 export enum EPaymentMethod {

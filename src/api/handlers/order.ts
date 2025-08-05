@@ -512,6 +512,34 @@ export async function getStockOrderPaginate(
   }
 }
 
+export async function getUserDebt(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { limit = 10, page = 1, order, sort } = req.query;
+    const filterObject = tryParseJson(req.query.filters);
+
+    const filters: IOrderFilter = {
+      ...filterObject,
+      limit: Number(limit),
+      page: Number(page),
+      order,
+      sort,
+    };
+
+    validatePagination(filters.page, filters.limit);
+
+    const result = await new OrderApp(ctx).getUserDebt(filters);
+
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function exportMissingProducts(
   ctx: Context,
   req: Request,
@@ -563,6 +591,30 @@ export async function exportOrderDetailsToExcel(
     }
 
     const workbook = await new OrderApp(ctx).exportOrderDetailsToExcel(id);
+
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename=orders.xlsx');
+
+    workbook.xlsx.write(res).then(() => {
+      res.status(200).end();
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function exportUserDebtToExcel(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const workbook = await new OrderApp(ctx).exportUserDebtToExcel();
 
     res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
     res.setHeader(
