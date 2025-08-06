@@ -18,6 +18,7 @@ class BaseRoutes {
   upload: Router = Router();
   location: Router = Router();
   partner: Router = Router();
+  client: Router = Router();
   feedback: Router = Router();
   supplier: Router = Router();
   revenue: Router = Router();
@@ -40,6 +41,7 @@ class BaseRoutes {
     this.v1.use('/upload', this.upload);
     this.v1.use('/location', this.location);
     this.v1.use('/partner', this.partner);
+    this.v1.use('/client', this.client);
     this.v1.use('/feedback', this.feedback);
     this.v1.use('/supplier', this.supplier);
     this.v1.use('/revenue', this.revenue);
@@ -70,6 +72,7 @@ export class API {
     apiV1.initUpload(this);
     apiV1.initLocation(this);
     apiV1.initPartner(this);
+    apiV1.initClient(this);
     apiV1.initFeedback(this);
     apiV1.initSupplier(this);
     apiV1.initRevenue(this);

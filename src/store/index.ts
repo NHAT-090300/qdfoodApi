@@ -11,6 +11,7 @@ import {
   MongoCategory,
   MongoProduct,
   MongoPartner,
+  MongoClients,
   MongoFeedback,
   MongoSupplier,
   MongoRevenue,
@@ -33,6 +34,7 @@ class MongoStores {
   category?: MongoCategory;
   product?: MongoProduct;
   partner?: MongoPartner;
+  clients?: MongoClients;
   feedback?: MongoFeedback;
   supplier?: MongoSupplier;
   revenue?: MongoRevenue;
@@ -97,6 +99,7 @@ export default class MongoStore {
       this.stores.category = new MongoCategory(this.db);
       this.stores.product = new MongoProduct(this.db);
       this.stores.partner = new MongoPartner(this.db);
+      this.stores.clients = new MongoClients(this.db);
       this.stores.feedback = new MongoFeedback(this.db);
       this.stores.supplier = new MongoSupplier(this.db);
       this.stores.revenue = new MongoRevenue(this.db);
@@ -198,6 +201,13 @@ export default class MongoStore {
       throw new Error('Partner Store is not setup yet');
     }
     return this.stores.partner;
+  }
+
+  clients() {
+    if (!this.stores.clients) {
+      throw new Error('Client Store is not setup yet');
+    }
+    return this.stores.clients;
   }
 
   feedback() {

@@ -15,3 +15,4 @@ export * from './order';
 export * from './inventory';
 export * from './inventoryTransaction';
 export * from './subCategory';
+export * from './client';
