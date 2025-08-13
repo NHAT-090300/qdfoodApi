@@ -1,4 +1,11 @@
-import { EInventoryTransactionType, EOrderStatus, IErrors, IOrderShippingAddress } from 'interface';
+import {
+  EInventoryTransactionType,
+  EOrderStatus,
+  IErrors,
+  IOrderShippingAddress,
+  IProductLog,
+  IProductLogItem,
+} from 'interface';
 import { ObjectId } from 'mongodb';
 import fs from 'fs';
 import { logger } from 'logger';
@@ -272,15 +279,140 @@ export const getTransactionTypeTag = (type: EInventoryTransactionType) => {
       color: 'volcano',
       text: 'Hoàn trả',
     },
+    [EInventoryTransactionType.PRODUC_EXPORT]: {
+      color: 'blue',
+      text: 'Xuất nguyên liệu',
+    },
+    [EInventoryTransactionType.PRODUC_IMPORT]: {
+      color: 'green',
+      text: 'Nhập thành phẩm',
+    },
   };
 
   return typeMap[type] || { color: 'default', text: 'Không xác định' };
 };
 
-export function removeVietnameseTones(str: string): string {
-  return str
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D');
+export function createUnsignedRegex(str: string): RegExp {
+  const map: Record<string, string> = {
+    a: '[aáàảạãăắằẳặẵâấầẩậẫ]',
+    d: '[dđ]',
+    e: '[eéèẻẹẽêếềểệễ]',
+    i: '[iíìỉịĩ]',
+    o: '[oóòỏọõôốòòỏọõôốồổộỗơớờởợỡ]',
+    u: '[uúùủụũưứừửựữ]',
+    y: '[yýỳỷỵỹ]',
+  };
+
+  let regexStr = '';
+  for (const char of str.toLowerCase()) {
+    // Dùng một câu lệnh `switch` để xử lý các trường hợp cụ thể
+    // Nếu không có ký tự có dấu, nó sẽ tự động rơi vào `default`
+    switch (char) {
+      case 'a':
+      case 'á':
+      case 'à':
+      case 'ả':
+      case 'ạ':
+      case 'ã':
+      case 'ă':
+      case 'ắ':
+      case 'ằ':
+      case 'ẳ':
+      case 'ặ':
+      case 'ẵ':
+      case 'â':
+      case 'ấ':
+      case 'ầ':
+      case 'ẩ':
+      case 'ậ':
+      case 'ẫ':
+        regexStr += map.a;
+        break;
+      case 'd':
+      case 'đ':
+        regexStr += map.d;
+        break;
+      case 'e':
+      case 'é':
+      case 'è':
+      case 'ẻ':
+      case 'ẹ':
+      case 'ẽ':
+      case 'ê':
+      case 'ế':
+      case 'ề':
+      case 'ể':
+      case 'ệ':
+      case 'ễ':
+        regexStr += map.e;
+        break;
+      case 'i':
+      case 'í':
+      case 'ì':
+      case 'ỉ':
+      case 'ị':
+      case 'ĩ':
+        regexStr += map.i;
+        break;
+      case 'o':
+      case 'ó':
+      case 'ò':
+      case 'ỏ':
+      case 'ọ':
+      case 'õ':
+      case 'ô':
+      case 'ố':
+      case 'ồ':
+      case 'ổ':
+      case 'ộ':
+      case 'ỗ':
+      case 'ơ':
+      case 'ớ':
+      case 'ờ':
+      case 'ở':
+      case 'ợ':
+      case 'ỡ':
+        regexStr += map.o;
+        break;
+      case 'u':
+      case 'ú':
+      case 'ù':
+      case 'ủ':
+      case 'ụ':
+      case 'ũ':
+      case 'ư':
+      case 'ứ':
+      case 'ừ':
+      case 'ử':
+      case 'ự':
+      case 'ữ':
+        regexStr += map.u;
+        break;
+      case 'y':
+      case 'ý':
+      case 'ỳ':
+      case 'ỷ':
+      case 'ỵ':
+      case 'ỹ':
+        regexStr += map.y;
+        break;
+      default:
+        regexStr += char;
+    }
+  }
+
+  return new RegExp(regexStr, 'i');
+}
+
+export function mergeProductLogItems(items: IProductLogItem[]): IProductLogItem[] {
+  return Object.values(
+    items?.reduce((acc: any, item: any) => {
+      if (!acc[item.productId]) {
+        acc[item.productId] = { ...item }; // tạo bản sao để tránh mutate
+      } else {
+        acc[item.productId].quantity += item.quantity;
+      }
+      return acc;
+    }, {}),
+  );
 }

@@ -14,8 +14,9 @@ export class InventoryTransaction implements IInventoryTransaction {
   type: EInventoryTransactionType;
   quantity: number;
   orderId?: ObjectId;
+  productLogId?: ObjectId;
   note?: string;
-  warehousePrice: number;
+  price: number;
   refundPrice?: number;
   createdAt?: Date;
   updatedAt?: Date;
@@ -26,8 +27,9 @@ export class InventoryTransaction implements IInventoryTransaction {
     this.supplierId = data.supplierId;
     this.type = data.type;
     this.quantity = data.quantity || 0;
-    this.warehousePrice = data.warehousePrice || 0;
+    this.price = data.price || 0;
     this.orderId = data.orderId;
+    this.productLogId = data.productLogId;
     this.note = data.note;
     this.refundPrice = data?.refundPrice || 0;
     this.createdAt = data.createdAt;
@@ -38,10 +40,11 @@ export class InventoryTransaction implements IInventoryTransaction {
     const schema = yup.object().shape({
       productId: yup.string().objectId().required(),
       supplierId: yup.string().objectId(),
-      warehousePrice: yup.number().default(0),
+      price: yup.number().default(0),
       type: yup.string().oneOf(Object.values(EInventoryTransactionType)).required(),
       quantity: yup.number().required().default(0),
       orderId: yup.string().objectId(),
+      productLogId: yup.string().objectId(),
       note: yup.string(),
       refundPrice: yup.number().default(0),
     });
@@ -57,6 +60,7 @@ export class InventoryTransaction implements IInventoryTransaction {
       productId: new ObjectId(result.productId),
       supplierId: result?.supplierId ? new ObjectId(result?.supplierId) : undefined,
       orderId: result?.orderId ? new ObjectId(result.orderId) : undefined,
+      productLogId: result?.productLogId ? new ObjectId(result.productLogId) : undefined,
     });
   }
 
@@ -70,7 +74,7 @@ export class InventoryTransaction implements IInventoryTransaction {
             supplierId: yup.string().objectId().required(),
             quantity: yup.number().default(0),
             type: yup.string().oneOf(Object.values(EInventoryTransactionType)),
-            warehousePrice: yup.number().default(0),
+            price: yup.number().default(0),
             note: yup.string().default(''),
           }),
         )

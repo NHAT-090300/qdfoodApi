@@ -10,6 +10,7 @@ export interface IProduct {
   subCategoryId?: ObjectId;
   defaultPrice: number;
   unitName: EUnit;
+  type: EProductType;
   suppliers?: ISupplierInfo[];
   isRetailAvailable?: boolean;
   slug?: string;
@@ -33,6 +34,11 @@ export enum EUnit {
   PAIR = 'pair',
   CAN = 'can',
   BUNDLE = 'bundle',
+}
+
+export enum EProductType {
+  PRODUCT = 'product',
+  MATERIAL = 'material',
 }
 
 export const EUnitDisplay: Record<EUnit, string> = {
@@ -75,6 +81,7 @@ export interface IProductFilter {
   direction?: string;
   category?: string;
   ninProduct?: string[];
+  type?: EProductType[];
   userId?: string;
   cartItems?: {
     productId: string;

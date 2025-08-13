@@ -7,7 +7,6 @@ import {
   IOrder,
   IOrderFilter,
   IOrderItem,
-  IOrderWithUser,
   IStockOrder,
   IUser,
 } from 'interface';

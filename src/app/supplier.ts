@@ -14,6 +14,8 @@ export class SupplierApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getPaginate`,
         message: 'Lấy danh sách supplier thất bại',
@@ -27,6 +29,8 @@ export class SupplierApp extends BaseApp {
     try {
       return await this.getStore().supplier().getList(filters);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getList`,
         message: 'Lấy danh sách supplier thất bại',
@@ -67,6 +71,8 @@ export class SupplierApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.create`,
         message: 'Tạo supplier thất bại',
@@ -82,6 +88,8 @@ export class SupplierApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.update`,
         message: 'Cập nhật supplier thất bại',
@@ -97,6 +105,8 @@ export class SupplierApp extends BaseApp {
         .supplier()
         .baseDelete({ _id: new ObjectId(supplierId) });
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.delete`,
         message: 'Cập nhật supplier thất bại',

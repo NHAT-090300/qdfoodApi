@@ -46,7 +46,7 @@ export async function getPagination(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { limit = 10, page = 1, order, sort } = req.query;
+    const { limit = 10, page = 1, order, sort, keyword } = req.query;
     const filterObject = tryParseJson(req.query.filters);
 
     const filters: IUserFilter = {
@@ -55,11 +55,41 @@ export async function getPagination(
       page: Number(page),
       order,
       sort,
+      keyword,
     };
 
     validatePagination(filters.page, filters.limit);
 
     const result = await new UserApp(ctx).getPaginate(filters);
+
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getUserDebtPaginate(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { limit = 10, page = 1, order, sort, keyword } = req.query;
+    const filterObject = tryParseJson(req.query.filters);
+
+    const filters: IUserFilter = {
+      ...filterObject,
+      limit: Number(limit),
+      page: Number(page),
+      order,
+      sort,
+      keyword,
+    };
+
+    validatePagination(filters.page, filters.limit);
+
+    const result = await new UserApp(ctx).getUserDebtPaginate(filters);
 
     res.json(result);
   } catch (err) {
@@ -74,10 +104,10 @@ export async function getAll(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { order, sort } = req.query;
+    const { order, sort, keyword } = req.query;
     const filterObject = tryParseJson(req.query.filters);
 
-    const filters: IUserFilter = { ...filterObject, order, sort };
+    const filters: IUserFilter = { ...filterObject, order, sort, keyword };
 
     const result = await new UserApp(ctx).getList(filters);
 

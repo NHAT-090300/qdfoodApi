@@ -14,6 +14,8 @@ export class NewsApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getPaginate`,
         message: 'Lấy danh sách news thất bại',
@@ -27,6 +29,8 @@ export class NewsApp extends BaseApp {
     try {
       return await this.getStore().news().getList(filters);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getList`,
         message: 'Lấy danh sách news thất bại',
@@ -94,6 +98,8 @@ export class NewsApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.create`,
         message: 'Tạo news thất bại',
@@ -115,6 +121,8 @@ export class NewsApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.update`,
         message: 'Cập nhật news thất bại',
@@ -134,6 +142,8 @@ export class NewsApp extends BaseApp {
 
       this.getServices().cloudinary.deleteByPaths([oldNews.image]);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.delete`,
         message: 'Cập nhật news thất bại',

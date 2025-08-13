@@ -14,11 +14,14 @@ export class ProductApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      const isAppError = error instanceof AppError;
+      if (isAppError) throw error;
+
       throw new AppError({
         id: `${where}.getPaginate`,
         message: 'Lấy danh sách product thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-        detail: error,
+        detail: error.message || error,
       });
     }
   }
@@ -29,11 +32,14 @@ export class ProductApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      const isAppError = error instanceof AppError;
+      if (isAppError) throw error;
+
       throw new AppError({
         id: `${where}.getListMoreByUser`,
         message: 'Lấy danh sách product thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-        detail: error,
+        detail: error?.message || error,
       });
     }
   }
@@ -44,11 +50,13 @@ export class ProductApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      const isAppError = error instanceof AppError;
+      if (isAppError) throw error;
       throw new AppError({
         id: `${where}.getListCartByUser`,
         message: 'Lấy danh sách product thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-        detail: error,
+        detail: error?.message || error,
       });
     }
   }
@@ -59,11 +67,30 @@ export class ProductApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      const isAppError = error instanceof AppError;
+      if (isAppError) throw error;
+
       throw new AppError({
         id: `${where}.getRandomProduct`,
         message: 'Lấy danh sách product thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-        detail: error,
+        detail: error?.message || error,
+      });
+    }
+  }
+
+  async getListWithInventory(filters: IProductFilter) {
+    try {
+      return await this.getStore().product().getListWithInventory(filters);
+    } catch (error: any) {
+      const isAppError = error instanceof AppError;
+      if (isAppError) throw error;
+
+      throw new AppError({
+        id: `${where}.getListWithInventory`,
+        message: 'Lấy danh sách product thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error?.message || error,
       });
     }
   }
@@ -72,11 +99,14 @@ export class ProductApp extends BaseApp {
     try {
       return await this.getStore().product().getList(filters);
     } catch (error: any) {
+      const isAppError = error instanceof AppError;
+      if (isAppError) throw error;
+
       throw new AppError({
         id: `${where}.getList`,
         message: 'Lấy danh sách product thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-        detail: error,
+        detail: error?.message || error,
       });
     }
   }
@@ -101,7 +131,7 @@ export class ProductApp extends BaseApp {
         id: `${where}.getById`,
         message: 'Lấy dữ liệu product không thành công',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-        detail: error,
+        detail: error?.message || error,
       });
     }
   }
@@ -153,30 +183,55 @@ export class ProductApp extends BaseApp {
 
   async create(data: Product) {
     try {
+      const productExit = await this.getStore().product().findOne({ code: data?.code });
+
+      if (productExit) {
+        throw new AppError({
+          id: `${where}.create`,
+          message: 'Mã sản phẩm đã tồn tại',
+          statusCode: StatusCodes.BAD_REQUEST,
+        });
+      }
+
       const result = await this.getStore().product().createOne(data);
 
       return result;
     } catch (error: any) {
+      const isAppError = error instanceof AppError;
+      if (isAppError) throw error;
+
       throw new AppError({
-        id: `${where}.create`,
-        message: 'Tạo product thất bại',
+        id: 'product.create.internal_error',
+        message: 'Tạo sản phẩm thất bại. Vui lòng thử lại sau.',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-        detail: error,
+        detail: error.message || error,
       });
     }
   }
 
   async update(productId: string, data: Product) {
     try {
+      const productExit = await this.getStore().product().findOne({ code: data?.code });
+
+      if (productExit && productId !== productExit?._id?.toString()) {
+        throw new AppError({
+          id: `${where}.create`,
+          message: 'Mã sản phẩm đã tồn tại',
+          statusCode: StatusCodes.BAD_REQUEST,
+        });
+      }
+
       const result = await this.getStore().product().updateOne(productId, data);
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.update`,
         message: 'Cập nhật product thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-        detail: error,
+        detail: error?.message || error,
       });
     }
   }
@@ -187,6 +242,7 @@ export class ProductApp extends BaseApp {
         .product()
         .baseDelete({ _id: new ObjectId(productId) });
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
       throw new AppError({
         id: `${where}.delete`,
         message: 'Cập nhật product thất bại',

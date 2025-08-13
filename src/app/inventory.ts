@@ -1,9 +1,10 @@
-import { StatusCodes } from 'http-status-codes';
-
 import ExcelJS from 'exceljs';
-import { IInventoryFilter } from 'interface';
+import { StatusCodes } from 'http-status-codes';
+import { IInventoryFilter, IProductLogItem } from 'interface';
 import { AppError, Inventory } from 'model';
+import moment from 'moment';
 import { ObjectId } from 'mongodb';
+
 import BaseApp from './base';
 
 const where = 'App.inventory';
@@ -15,6 +16,8 @@ export class InventoryApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getPaginate`,
         message: 'Lấy danh sách inventory thất bại',
@@ -28,6 +31,8 @@ export class InventoryApp extends BaseApp {
     try {
       return await this.getStore().inventory().getList(filters);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getList`,
         message: 'Lấy danh sách inventory thất bại',
@@ -83,6 +88,8 @@ export class InventoryApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.create`,
         message: 'Tạo inventory thất bại',
@@ -98,6 +105,8 @@ export class InventoryApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.update`,
         message: 'Cập nhật inventory thất bại',
@@ -113,6 +122,8 @@ export class InventoryApp extends BaseApp {
         .inventory()
         .baseDelete({ _id: new ObjectId(inventoryId) });
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.delete`,
         message: 'Cập nhật inventory thất bại',
@@ -126,6 +137,8 @@ export class InventoryApp extends BaseApp {
     try {
       await this.getStore().inventory().createMany(inventorys);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.createMany`,
         message: 'Tạo inventory thất bại',
@@ -140,13 +153,7 @@ export class InventoryApp extends BaseApp {
     const worksheet = workbook.addWorksheet('Tồn kho');
 
     // Header row
-    worksheet.addRow([
-      'Mã sản phẩm',
-      'Tên sản phẩm',
-      'Số lượng',
-      'Giá sản phẩm',
-      'Số lượng hoàn trả',
-    ]);
+    worksheet.addRow(['Mã sản phẩm', 'Tên sản phẩm', 'Số lượng', 'Hoàn trả', 'Ngày cập nhật']);
 
     // Format header
     worksheet.getRow(1).eachCell((cell) => {
@@ -168,10 +175,9 @@ export class InventoryApp extends BaseApp {
       const code = product.code ?? '---';
       const name = product.name ?? 'Không có tên';
       const quantity = item.quantity ?? 0;
-      const price = item.warehousePrice ?? 0;
-      const returnQty = item.refundAmount ?? 0;
+      const updatedDate = moment(item?.updatedAt).format('HH:mm:ss DD/MM/YYYY') ?? '';
 
-      const row = [code, name, quantity, price, returnQty];
+      const row = [code, name, quantity, updatedDate];
 
       const rowRef = worksheet.addRow(row);
       rowRef.eachCell((cell) => {
@@ -190,5 +196,33 @@ export class InventoryApp extends BaseApp {
     });
 
     return workbook;
+  }
+
+  // Kiểm tra sl nguyên liệu đầu vào
+  async checkInventoryFast(ingredientItems: IProductLogItem[]) {
+    const checks = ingredientItems?.map(async (item) => {
+      const stock = await this.getStore()
+        .inventory()
+        .findOne({
+          productId: new ObjectId(item?.productId),
+        });
+
+      if (!stock) {
+        throw new AppError({
+          id: `${where}.create`,
+          message: `Sản phẩm ${item.productId} không tồn tại trong kho`,
+          statusCode: StatusCodes.BAD_REQUEST,
+        });
+      }
+
+      if (item.quantity > stock.quantity) {
+        throw new AppError({
+          id: `${where}.create`,
+          message: `Nguyên liệu ${item.productId} vượt quá số lượng tồn kho (${stock.quantity})`,
+          statusCode: StatusCodes.BAD_REQUEST,
+        });
+      }
+    });
+    await Promise.all(checks);
   }
 }

@@ -1,8 +1,9 @@
-import { escapeRegExp, isNumber } from 'lodash';
-import { ClientSession, Db, ObjectId } from 'mongodb';
-
 import { ESortOrder, ICategory, ICategoryFilter } from 'interface';
+import { isNumber } from 'lodash';
 import { Category } from 'model';
+import { ClientSession, Db, ObjectId } from 'mongodb';
+import { createUnsignedRegex } from 'utils';
+
 import { BaseStore } from './base';
 
 export class MongoCategory extends BaseStore<ICategory> {
@@ -36,13 +37,19 @@ export class MongoCategory extends BaseStore<ICategory> {
     };
 
     if (filters.keyword) {
-      const regex = new RegExp(escapeRegExp(filters.keyword), 'i');
-      condition.$or = [{ name: { $regex: regex }, description: { $regex: regex } }];
+      const keyword = filters.keyword.trim();
+
+      if (ObjectId.isValid(keyword)) {
+        condition.$or = [{ _id: new ObjectId(keyword) }];
+      } else {
+        const regex = createUnsignedRegex(keyword);
+        condition.$or = [{ name: { $regex: regex } }];
+      }
     }
 
     if (Array.isArray(filters.isDelete) && filters.isDelete.length) {
       condition.isDelete = {
-        $in: filters.isDelete,
+        $in: filters.isDelete?.map((item) => item === 'true'),
       };
     }
 

@@ -16,6 +16,11 @@ export function initProduct(api: API) {
     api.handler(handlers.getAll),
   );
   api.baseRoutes.product.get(
+    '/all',
+    api.handler(authentication(ERole.ADMIN)),
+    api.handler(handlers.getListWithInventory),
+  );
+  api.baseRoutes.product.get(
     '/',
     api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getPagination),

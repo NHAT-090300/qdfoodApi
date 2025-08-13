@@ -14,6 +14,8 @@ export class RevenueApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getPaginate`,
         message: 'Lấy danh sách revenue thất bại',
@@ -27,6 +29,8 @@ export class RevenueApp extends BaseApp {
     try {
       return await this.getStore().revenue().getList(filters);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getList`,
         message: 'Lấy danh sách revenue thất bại',
@@ -67,6 +71,8 @@ export class RevenueApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.create`,
         message: 'Tạo revenue thất bại',
@@ -82,6 +88,8 @@ export class RevenueApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.update`,
         message: 'Cập nhật revenue thất bại',
@@ -97,6 +105,8 @@ export class RevenueApp extends BaseApp {
         .revenue()
         .baseDelete({ _id: new ObjectId(revenueId) });
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.delete`,
         message: 'Cập nhật revenue thất bại',

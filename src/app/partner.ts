@@ -14,6 +14,8 @@ export class PartnerApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getPaginate`,
         message: 'Lấy danh sách partner thất bại',
@@ -27,6 +29,8 @@ export class PartnerApp extends BaseApp {
     try {
       return await this.getStore().partner().getList(filters);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getList`,
         message: 'Lấy danh sách partner thất bại',
@@ -88,6 +92,8 @@ export class PartnerApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.update`,
         message: 'Cập nhật partner thất bại',
@@ -107,6 +113,8 @@ export class PartnerApp extends BaseApp {
 
       this.getServices().cloudinary.deleteByPaths([oldPartner.image]);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.delete`,
         message: 'Cập nhật partner thất bại',

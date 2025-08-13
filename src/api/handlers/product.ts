@@ -33,7 +33,7 @@ export async function getMore(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { limit = 10, page = 1, order, sort } = req.query;
+    const { limit = 10, page = 1, order, sort, keyword } = req.query;
     const filterObject = tryParseJson(req.query.filters);
 
     const authorization = req.headers.authorization as string;
@@ -46,6 +46,7 @@ export async function getMore(
       page: Number(page),
       order,
       sort,
+      keyword,
     };
 
     validatePagination(filters.page, filters.limit);
@@ -65,7 +66,7 @@ export async function getProductListByUser(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { limit = 10, page = 1, order, sort } = req.query;
+    const { limit = 10, page = 1, order, sort, keyword } = req.query;
     const filterObject = tryParseJson(req.query.filters);
 
     const authorization = req.headers.authorization as string;
@@ -78,6 +79,7 @@ export async function getProductListByUser(
       page: Number(page),
       order,
       sort,
+      keyword,
     };
 
     validatePagination(filters.page, filters.limit);
@@ -130,7 +132,7 @@ export async function getPagination(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { limit = 10, page = 1, order, sort } = req.query;
+    const { limit = 10, page = 1, order, sort, keyword } = req.query;
     const filterObject = tryParseJson(req.query.filters);
 
     const filters: IProductFilter = {
@@ -139,11 +141,32 @@ export async function getPagination(
       page: Number(page),
       order,
       sort,
+      keyword,
     };
 
     validatePagination(filters.page, filters.limit);
 
     const result = await new ProductApp(ctx).getPaginate(filters);
+
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getListWithInventory(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { order, sort, keyword } = req.query;
+    const filterObject = tryParseJson(req.query.filters);
+
+    const filters: IProductFilter = { ...filterObject, order, sort, keyword };
+
+    const result = await new ProductApp(ctx).getListWithInventory(filters);
 
     res.json(result);
   } catch (err) {
@@ -158,10 +181,10 @@ export async function getAll(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { order, sort } = req.query;
+    const { order, sort, keyword } = req.query;
     const filterObject = tryParseJson(req.query.filters);
 
-    const filters: IProductFilter = { ...filterObject, order, sort };
+    const filters: IProductFilter = { ...filterObject, order, sort, keyword };
 
     const result = await new ProductApp(ctx).getList(filters);
 

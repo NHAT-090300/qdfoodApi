@@ -1,9 +1,10 @@
-import { escapeRegExp, isNumber } from 'lodash';
-import { ClientSession, Db, ObjectId } from 'mongodb';
-
 import { StatusCodes } from 'http-status-codes';
 import { ESortOrder, IInventory, IInventoryFilter, IOrder } from 'interface';
+import { isArray, isNumber } from 'lodash';
 import { AppError, Inventory } from 'model';
+import { ClientSession, Db, ObjectId } from 'mongodb';
+import { createUnsignedRegex } from 'utils';
+
 import { BaseStore } from './base';
 
 const where = 'Store.Inventory';
@@ -18,8 +19,10 @@ export class MongoInventory extends BaseStore<IInventory> {
       title: 1,
       url: 1,
       image: 1,
+      quantity: 1,
       createdAt: 1,
       updatedAt: 1,
+      unitName: 1,
       ...custom,
     };
   }
@@ -37,11 +40,16 @@ export class MongoInventory extends BaseStore<IInventory> {
     };
 
     if (filters.keyword) {
-      const regex = new RegExp(escapeRegExp(filters.keyword), 'i');
+      const keyword = filters.keyword.trim();
+      const regex = createUnsignedRegex(keyword);
       conditionProduct.$or = [
         { 'product.name': { $regex: regex } },
         { 'product.code': { $regex: regex } },
       ];
+    }
+
+    if (filters?.type?.length && isArray(filters.type)) {
+      conditionProduct['product.type'] = { $in: filters.type };
     }
 
     if (Array.isArray(filters.ids) && filters.ids.length) {
@@ -101,9 +109,11 @@ export class MongoInventory extends BaseStore<IInventory> {
           },
         },
         {
+          $match: conditionProduct,
+        },
+        {
           $sort: sort,
         },
-        { $match: conditionProduct },
         {
           $facet: {
             data: [{ $skip: paginate.limit * (paginate.page - 1) }, { $limit: paginate.limit }],
@@ -165,7 +175,9 @@ export class MongoInventory extends BaseStore<IInventory> {
         {
           $sort: sort,
         },
-        { $match: conditionProduct },
+        {
+          $match: conditionProduct,
+        },
       ])
       .toArray();
 
@@ -201,7 +213,6 @@ export class MongoInventory extends BaseStore<IInventory> {
       {
         productId: ObjectId;
         quantity: number;
-        totalPrice: number;
       }
     >();
 
@@ -209,13 +220,11 @@ export class MongoInventory extends BaseStore<IInventory> {
       const key = item.productId.toHexString();
       if (mergedMap.has(key)) {
         const existing = mergedMap.get(key)!;
-        existing.totalPrice += item.warehousePrice * item.quantity;
         existing.quantity += item.quantity;
       } else {
         mergedMap.set(key, {
           productId: item.productId,
           quantity: item.quantity,
-          totalPrice: item.warehousePrice * item.quantity,
         });
       }
     }
@@ -224,36 +233,26 @@ export class MongoInventory extends BaseStore<IInventory> {
 
     const existingInventories = await this.collection
       .find({ productId: { $in: productIds } })
-      .project({ productId: 1, quantity: 1, warehousePrice: 1 })
+      .project({ productId: 1, quantity: 1 })
       .toArray();
 
-    const existingMap = new Map<string, { quantity: number; warehousePrice: number }>();
+    const existingMap = new Map<string, { quantity: number }>();
     for (const inv of existingInventories) {
       const key = inv.productId.toHexString();
       existingMap.set(key, {
         quantity: inv.quantity || 0,
-        warehousePrice: inv.warehousePrice || 0,
       });
     }
 
     const bulkOps = [];
 
     for (const [key, item] of mergedMap.entries()) {
-      const existing = existingMap.get(key);
-      const existingQty = existing?.quantity || 0;
-      const existingPrice = existing?.warehousePrice || 0;
-      const totalQty = existingQty + item.quantity;
-      const totalPrice = existingQty * existingPrice + item.totalPrice;
-
-      const avgWarehousePrice = totalQty === 0 ? existingPrice : totalPrice / totalQty;
-
       bulkOps.push({
         updateOne: {
           filter: { productId: item.productId },
           update: {
             $inc: { quantity: item.quantity },
             $set: {
-              warehousePrice: avgWarehousePrice,
               updatedAt: now,
             },
           },

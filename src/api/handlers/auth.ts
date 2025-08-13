@@ -29,7 +29,7 @@ export async function loginAdmin(
     if (user?.role === ERole.USER) {
       throw new AppError({
         id: `${where}.login`,
-        message: 'Insufficient User Permissions',
+        message: 'Người dùng không có quyền',
         statusCode: StatusCodes.FORBIDDEN,
       });
     }
@@ -38,7 +38,7 @@ export async function loginAdmin(
     if (!user || !isValidPass) {
       throw new AppError({
         id: `${where}.login`,
-        message: 'You have entered an invalid email address or password',
+        message: 'Địa chỉ email hoặc mật khẩu không hợp lệ',
         statusCode: StatusCodes.NOT_FOUND,
       });
     }
@@ -77,7 +77,7 @@ export async function loginUser(
     if (!user || !isValidPass) {
       throw new AppError({
         id: `${where}.login`,
-        message: 'You have entered an invalid email address or password',
+        message: 'Địa chỉ email hoặc mật khẩu không hợp lệ',
         statusCode: StatusCodes.NOT_FOUND,
       });
     }

@@ -50,7 +50,7 @@ export async function getPagination(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { limit = 10, page = 1, order, sort } = req.query;
+    const { limit = 10, page = 1, order, sort, keyword } = req.query;
     const filterObject = tryParseJson(req.query.filters);
 
     const filters: IInventoryTransactionFilter = {
@@ -59,6 +59,7 @@ export async function getPagination(
       page: Number(page),
       order,
       sort,
+      keyword,
     };
 
     validatePagination(filters.page, filters.limit);
@@ -78,10 +79,10 @@ export async function getAll(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { order, sort } = req.query;
+    const { order, sort, keyword } = req.query;
     const filterObject = tryParseJson(req.query.filters);
 
-    const filters: IInventoryTransactionFilter = { ...filterObject, order, sort };
+    const filters: IInventoryTransactionFilter = { ...filterObject, order, sort, keyword };
 
     const result = await new InventoryTransactionApp(ctx).getList(filters);
 
@@ -175,13 +176,14 @@ export async function exportInventoryTransactionsToExcel(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { order, sort } = req.query;
+    const { order, sort, keyword } = req.query;
     const filterObject = tryParseJson(req.query.filters);
 
     const filters: IInventoryTransactionFilter = {
       ...filterObject,
       order,
       sort,
+      keyword,
     };
 
     const workbook = await new InventoryTransactionApp(ctx).exportInventoryTransactionsToExcel(

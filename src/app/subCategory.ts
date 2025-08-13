@@ -14,6 +14,8 @@ export class SubCategoryApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getPaginate`,
         message: 'Lấy danh sách sub category thất bại',
@@ -27,6 +29,8 @@ export class SubCategoryApp extends BaseApp {
     try {
       return await this.getStore().subCategory().getList(filters);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getList`,
         message: 'Lấy danh sách subCategory thất bại',
@@ -67,6 +71,8 @@ export class SubCategoryApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.create`,
         message: 'Tạo Sub Category thất bại',
@@ -82,6 +88,8 @@ export class SubCategoryApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.update`,
         message: 'Cập nhật Sub Category thất bại',
@@ -97,6 +105,8 @@ export class SubCategoryApp extends BaseApp {
         .subCategory()
         .baseDelete({ _id: new ObjectId(id) });
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.delete`,
         message: 'Xóa Sub Category thất bại',

@@ -19,6 +19,8 @@ export class OrderApp extends BaseApp {
     try {
       return await this.getStore().order().getCountByStatuses(filters);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getCountByStatuses`,
         message: 'Lấy danh sách order thất bại',
@@ -34,6 +36,8 @@ export class OrderApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getPaginate`,
         message: 'Lấy danh sách order thất bại',
@@ -49,6 +53,8 @@ export class OrderApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getStockOrderPaginate`,
         message: 'Lấy danh sách order thất bại',
@@ -64,6 +70,8 @@ export class OrderApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getStockOrderPaginate`,
         message: 'Lấy danh sách order thất bại',
@@ -77,6 +85,8 @@ export class OrderApp extends BaseApp {
     try {
       return await this.getStore().order().getStockOrderList(filters);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getStockOrderList`,
         message: 'Lấy danh sách order thất bại',
@@ -90,6 +100,8 @@ export class OrderApp extends BaseApp {
     try {
       return await this.getStore().order().getList(filters);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getList`,
         message: 'Lấy danh sách order thất bại',
@@ -163,6 +175,8 @@ export class OrderApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.create`,
         message: 'Tạo order thất bại',
@@ -178,6 +192,8 @@ export class OrderApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.update`,
         message: 'Cập nhật order thất bại',
@@ -193,6 +209,8 @@ export class OrderApp extends BaseApp {
         .order()
         .baseDelete({ _id: new ObjectId(orderId) });
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.delete`,
         message: 'Cập nhật order thất bại',
@@ -231,7 +249,7 @@ export class OrderApp extends BaseApp {
             type: EInventoryTransactionType.EXPORT,
             quantity: item.quantity,
             orderId: order._id,
-            warehousePrice: item.price,
+            price: item.price,
             refundPrice: item.refundAmount,
             note: `Xuất kho tạo khi đơn hàng ${order._id?.toString()}`,
           });
@@ -254,6 +272,8 @@ export class OrderApp extends BaseApp {
         .order()
         .baseUpdate({ _id: new ObjectId(orderId) }, { $set: updateData });
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.updateStatus`,
         message: 'Cập nhật order thất bại',
@@ -381,6 +401,8 @@ export class OrderApp extends BaseApp {
 
       return workbook;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `order.exportOrders`,
         message: 'Xuất báo cáo đơn hàng thất bại',
@@ -484,6 +506,8 @@ export class OrderApp extends BaseApp {
 
       await this.getStore().order().updateOrderItemRefund(orderId, data);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.updateStatus`,
         message: 'Cập nhật order thất bại',

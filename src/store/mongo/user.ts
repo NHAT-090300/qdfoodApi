@@ -1,8 +1,9 @@
-import { escapeRegExp, isNumber } from 'lodash';
-import { ClientSession, Db, ObjectId } from 'mongodb';
-
-import { ERole, ESortOrder, IUser, IUserFilter } from 'interface';
+import { EOrderStatus, ERole, ESortOrder, IUser, IUserFilter } from 'interface';
+import { isNumber } from 'lodash';
 import { User } from 'model';
+import { ClientSession, Db, ObjectId } from 'mongodb';
+import { createUnsignedRegex } from 'utils';
+
 import { BaseStore } from './base';
 
 export class MongoUser extends BaseStore<IUser> {
@@ -38,7 +39,8 @@ export class MongoUser extends BaseStore<IUser> {
     };
 
     if (filters.keyword) {
-      const regex = new RegExp(escapeRegExp(filters.keyword), 'i');
+      const keyword = filters.keyword.trim();
+      const regex = createUnsignedRegex(keyword);
       condition.$or = [{ name: { $regex: regex }, email: { $regex: regex } }];
     }
 
@@ -88,6 +90,76 @@ export class MongoUser extends BaseStore<IUser> {
         {
           $project: this.getProject({
             address: 1,
+          }),
+        },
+        {
+          $facet: {
+            data: [{ $skip: paginate.limit * (paginate.page - 1) }, { $limit: paginate.limit }],
+            pageInfo: [{ $count: 'count' }],
+          },
+        },
+      ])
+      .next();
+
+    const data = result?.data ?? [];
+    const totalData = result?.pageInfo[0]?.count ?? 0;
+
+    return {
+      data,
+      totalData,
+      pagination: {
+        limit: paginate.limit,
+        page: paginate.page,
+        totalPages: Math.ceil(totalData / paginate.limit),
+        totalItems: totalData,
+      },
+    };
+  }
+
+  async getUserDebtPaginate(filters: IUserFilter) {
+    const { condition, sort, paginate } = this.getQuery(filters);
+
+    const result = await this.collection
+      .aggregate<{ data: IUser[]; pageInfo: Array<{ count: number }> }>([
+        {
+          $match: condition,
+        },
+        {
+          $lookup: {
+            from: 'orders',
+            let: { uid: '$_id' },
+            pipeline: [
+              { $match: { $expr: { $eq: ['$userId', '$$uid'] }, status: EOrderStatus.DEBT } },
+              {
+                $group: {
+                  _id: null,
+                  totalDebt: { $sum: '$unpaidAmount' },
+                  totalOrder: { $sum: 1 },
+                },
+              },
+            ],
+            as: 'debtInfo',
+          },
+        },
+        {
+          $addFields: {
+            debtInfo: { $arrayElemAt: ['$debtInfo', 0] },
+          },
+        },
+        {
+          $addFields: {
+            totalDebt: { $ifNull: ['$debtInfo.totalDebt', 0] },
+            totalOrder: { $ifNull: ['$debtInfo.totalOrder', 0] },
+          },
+        },
+        {
+          $sort: sort,
+        },
+        {
+          $project: this.getProject({
+            address: 1,
+            totalDebt: 1,
+            totalOrder: 1,
           }),
         },
         {

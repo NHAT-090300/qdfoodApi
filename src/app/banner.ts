@@ -14,6 +14,8 @@ export class BannerApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getPaginate`,
         message: 'Lấy danh sách banner thất bại',
@@ -27,6 +29,8 @@ export class BannerApp extends BaseApp {
     try {
       return await this.getStore().banner().getList(filters);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getList`,
         message: 'Lấy danh sách banner thất bại',
@@ -67,6 +71,8 @@ export class BannerApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.create`,
         message: 'Tạo banner thất bại',
@@ -88,6 +94,8 @@ export class BannerApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.update`,
         message: 'Cập nhật banner thất bại',
@@ -107,6 +115,8 @@ export class BannerApp extends BaseApp {
 
       this.getServices().cloudinary.deleteByPaths([oldBanner.image]);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.delete`,
         message: 'Cập nhật banner thất bại',

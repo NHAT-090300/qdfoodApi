@@ -6,12 +6,12 @@ import { ERole } from 'interface';
 export function initInventorytransaction(api: API) {
   api.baseRoutes.inventoryTransaction.get(
     '/list',
-    api.handler(authentication(ERole.USER)),
+    api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getAll),
   );
   api.baseRoutes.inventoryTransaction.get(
     '/',
-    api.handler(authentication(ERole.USER)),
+    api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getPagination),
   );
 
@@ -23,7 +23,7 @@ export function initInventorytransaction(api: API) {
 
   api.baseRoutes.inventoryTransaction.get(
     '/:id',
-    api.handler(authentication(ERole.USER)),
+    api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getDetail),
   );
   api.baseRoutes.inventoryTransaction.post(

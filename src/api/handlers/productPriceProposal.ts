@@ -2,24 +2,24 @@ import { NextFunction, Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 
 import { Context } from 'api';
-import { ProductPriceApp } from 'app';
-import { IProductPriceFilter } from 'interface';
-import { AppError, ProductPrice } from 'model';
+import { ProductPriceApp, ProductPriceProposalApp, UserApp } from 'app';
+import { IProductPriceProposalFilter } from 'interface';
+import { AppError, ProductPriceProposal } from 'model';
 import { isValidId, tryParseJson, validatePagination } from 'utils';
 import { ObjectId } from 'mongodb';
 
-const where = 'Handlers.productPrice';
+const where = 'Handlers.productPriceProposal';
 
-export async function createProductPrice(
+export async function createProductPriceProposal(
   ctx: Context,
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
   try {
-    const data = await ProductPrice.sequelize(req.body);
+    const data = await ProductPriceProposal.sequelize(req.body);
 
-    const result = await new ProductPriceApp(ctx).create(data);
+    const result = await new ProductPriceProposalApp(ctx).create(data);
 
     res.json(result);
   } catch (error) {
@@ -27,7 +27,7 @@ export async function createProductPrice(
   }
 }
 
-export async function bulkCreateProductPrice(
+export async function bulkCreateProductPriceProposal(
   ctx: Context,
   req: Request,
   res: Response,
@@ -42,15 +42,63 @@ export async function bulkCreateProductPrice(
       !productIds.every((item) => ObjectId.isValid(item))
     ) {
       throw new AppError({
-        id: 'productPrice.bulkCreateProductPrice',
+        id: 'productPriceProposal.bulkCreateProductPriceProposal',
         message: 'userId hoặc danh sách productId không hợp lệ',
         statusCode: StatusCodes.BAD_REQUEST,
       });
     }
-    await new ProductPriceApp(ctx).bulkCreateProductPrice(userId, productIds);
+    await new ProductPriceProposalApp(ctx).bulkCreateProductPriceProposal(userId, productIds);
 
     res.json('ok');
   } catch (error) {
+    next(error);
+  }
+}
+
+export async function upsertPriceProposals(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const userId = req.params.userId as string;
+
+    console.log('userId', userId);
+    if (!isValidId(userId)) {
+      throw new AppError({
+        id: `${where}.upsertPriceProposals`,
+        message: 'userId không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    const user = await new UserApp(ctx).getById(userId);
+
+    if (!user) {
+      throw new AppError({
+        id: `${where}.upsertPriceProposals`,
+        message: 'Người dùng không tồn tại',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    const prices = await new ProductPriceApp(ctx).getByUserId(userId);
+
+    console.log('prices', prices);
+
+    if (!prices?.length) {
+      throw new AppError({
+        id: `${where}.upsertPriceProposals`,
+        message: 'Không có giá sản phẩm nào để cập nhật',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+    await new ProductPriceProposalApp(ctx).upsertPriceProposals(userId, prices);
+
+    res.json('ok');
+  } catch (error) {
+    console.error(error);
     next(error);
   }
 }
@@ -65,7 +113,7 @@ export async function getPaginateAdmin(
     const { limit = 10, page = 1, order, sort, keyword } = req.query;
     const filterObject = tryParseJson(req.query.filters);
 
-    const filters: IProductPriceFilter = {
+    const filters: IProductPriceProposalFilter = {
       ...filterObject,
       limit: Number(limit),
       page: Number(page),
@@ -76,7 +124,7 @@ export async function getPaginateAdmin(
 
     validatePagination(filters.page, filters.limit);
 
-    const result = await new ProductPriceApp(ctx).getPaginateAdmin(filters);
+    const result = await new ProductPriceProposalApp(ctx).getPaginateAdmin(filters);
 
     res.json(result);
   } catch (err) {
@@ -94,9 +142,9 @@ export async function getAll(
     const { order, sort, keyword } = req.query;
     const filterObject = tryParseJson(req.query.filters);
 
-    const filters: IProductPriceFilter = { ...filterObject, order, sort, keyword };
+    const filters: IProductPriceProposalFilter = { ...filterObject, order, sort, keyword };
 
-    const result = await new ProductPriceApp(ctx).getList(filters);
+    const result = await new ProductPriceProposalApp(ctx).getList(filters);
 
     res.json(result);
   } catch (err) {
@@ -121,7 +169,7 @@ export async function getDetail(
       });
     }
 
-    const result = await new ProductPriceApp(ctx).getById(id);
+    const result = await new ProductPriceProposalApp(ctx).getById(id);
 
     res.json(result);
   } catch (err) {
@@ -129,7 +177,7 @@ export async function getDetail(
   }
 }
 
-export async function updateProductPrice(
+export async function updateProductPriceProposal(
   ctx: Context,
   req: Request,
   res: Response,
@@ -140,15 +188,15 @@ export async function updateProductPrice(
 
     if (!isValidId(id)) {
       throw new AppError({
-        id: `${where}.updateProductPrice`,
+        id: `${where}.updateProductPriceProposal`,
         message: 'id không hợp lệ',
         statusCode: StatusCodes.BAD_REQUEST,
       });
     }
 
-    const data = await ProductPrice.sequelize(req.body);
+    const data = await ProductPriceProposal.sequelize(req.body);
 
-    const result = await new ProductPriceApp(ctx).update(id, data);
+    const result = await new ProductPriceProposalApp(ctx).update(id, data);
 
     res.json(result);
   } catch (error) {
@@ -156,7 +204,7 @@ export async function updateProductPrice(
   }
 }
 
-export async function deleteProductPrice(
+export async function deleteProductPriceProposal(
   ctx: Context,
   req: Request,
   res: Response,
@@ -167,13 +215,13 @@ export async function deleteProductPrice(
 
     if (!isValidId(id)) {
       throw new AppError({
-        id: `${where}.deleteProductPrice`,
+        id: `${where}.deleteProductPriceProposal`,
         message: 'id không hợp lệ',
         statusCode: StatusCodes.BAD_REQUEST,
       });
     }
 
-    const result = await new ProductPriceApp(ctx).delete(id);
+    const result = await new ProductPriceProposalApp(ctx).delete(id);
 
     res.json(result);
   } catch (error) {

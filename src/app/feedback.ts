@@ -14,6 +14,8 @@ export class FeedbackApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getPaginate`,
         message: 'Lấy danh sách feedback thất bại',
@@ -27,6 +29,8 @@ export class FeedbackApp extends BaseApp {
     try {
       return await this.getStore().feedback().getList(filters);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getList`,
         message: 'Lấy danh sách feedback thất bại',
@@ -67,6 +71,8 @@ export class FeedbackApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.create`,
         message: 'Tạo feedback thất bại',
@@ -88,6 +94,8 @@ export class FeedbackApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.update`,
         message: 'Cập nhật feedback thất bại',
@@ -107,6 +115,8 @@ export class FeedbackApp extends BaseApp {
 
       this.getServices().cloudinary.deleteByPaths([oldFeedback.image]);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.delete`,
         message: 'Cập nhật feedback thất bại',

@@ -1,10 +1,11 @@
-import { StatusCodes } from 'http-status-codes';
-
 import ExcelJS from 'exceljs';
+import { StatusCodes } from 'http-status-codes';
 import { EInventoryTransactionType, IInventoryTransactionFilter } from 'interface';
 import { AppError, InventoryTransaction } from 'model';
+import moment from 'moment';
 import { ObjectId } from 'mongodb';
 import { getTransactionTypeTag } from 'utils';
+
 import BaseApp from './base';
 
 const where = 'App.inventoryTransaction';
@@ -16,6 +17,8 @@ export class InventoryTransactionApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getPaginate`,
         message: 'Lấy danh sách inventoryTransaction thất bại',
@@ -29,6 +32,8 @@ export class InventoryTransactionApp extends BaseApp {
     try {
       return await this.getStore().inventoryTransaction().getList(filters);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getList`,
         message: 'Lấy danh sách inventoryTransaction thất bại',
@@ -84,6 +89,8 @@ export class InventoryTransactionApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.create`,
         message: 'Tạo inventoryTransaction thất bại',
@@ -99,6 +106,8 @@ export class InventoryTransactionApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.createMany`,
         message: 'Tạo inventoryTransaction thất bại',
@@ -116,6 +125,8 @@ export class InventoryTransactionApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.update`,
         message: 'Cập nhật inventoryTransaction thất bại',
@@ -131,6 +142,8 @@ export class InventoryTransactionApp extends BaseApp {
         .inventoryTransaction()
         .baseDelete({ _id: new ObjectId(inventoryTransactionId) });
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.delete`,
         message: 'Cập nhật inventoryTransaction thất bại',
@@ -154,6 +167,7 @@ export class InventoryTransactionApp extends BaseApp {
         'Giá sản phẩm',
         'Số tiền hoàn trả',
         'Thông tin',
+        'Ngày tạo',
       ]);
 
       // Format header
@@ -173,13 +187,14 @@ export class InventoryTransactionApp extends BaseApp {
       transactions.forEach((item: any) => {
         const product = item.product ?? {};
         const row = [
-          product.code ?? '---',
+          product.code ?? '-',
           product.name ?? 'Không có tên',
           item.quantity ?? 0,
-          getTransactionTypeTag(item.type)?.text ?? '---',
-          item.warehousePrice ?? 0,
+          getTransactionTypeTag(item.type)?.text ?? '-',
+          item.price ?? 0,
           item.refundPrice ?? 0,
           item.note ?? '',
+          moment(item?.createdAt).format('HH:mm:ss DD/MM/YYYY') ?? '',
         ];
 
         const rowRef = worksheet.addRow(row);
@@ -201,6 +216,8 @@ export class InventoryTransactionApp extends BaseApp {
 
       return workbook;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `Inventory.exportInventoryTransactionsToExcel`,
         message: 'Xuất báo cáo giao dịch kho thất bại',

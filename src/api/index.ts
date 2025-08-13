@@ -23,10 +23,12 @@ class BaseRoutes {
   supplier: Router = Router();
   revenue: Router = Router();
   productPrice: Router = Router();
+  productPriceProposal: Router = Router();
   order: Router = Router();
   inventory: Router = Router();
   inventoryTransaction: Router = Router();
   subCategory: Router = Router();
+  productLog: Router = Router();
 
   constructor(rootRouter: Router) {
     this.root = rootRouter;
@@ -46,9 +48,11 @@ class BaseRoutes {
     this.v1.use('/supplier', this.supplier);
     this.v1.use('/revenue', this.revenue);
     this.v1.use('/product-price', this.productPrice);
+    this.v1.use('/product-price-proposal', this.productPriceProposal);
     this.v1.use('/order', this.order);
     this.v1.use('/inventory', this.inventory);
     this.v1.use('/inventory-transaction', this.inventoryTransaction);
+    this.v1.use('/product-log', this.productLog);
   }
 }
 
@@ -77,9 +81,11 @@ export class API {
     apiV1.initSupplier(this);
     apiV1.initRevenue(this);
     apiV1.initProductPrice(this);
+    apiV1.initProductPriceProposal(this);
     apiV1.initOrder(this);
     apiV1.initInventory(this);
     apiV1.initInventorytransaction(this);
+    apiV1.initProductLog(this);
     logger.info('Setup api success!');
   };
 

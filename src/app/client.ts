@@ -14,6 +14,8 @@ export class ClientApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getPaginate`,
         message: 'Lấy danh sách client thất bại',
@@ -27,6 +29,8 @@ export class ClientApp extends BaseApp {
     try {
       return await this.getStore().clients().getList(filters);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getList`,
         message: 'Lấy danh sách client thất bại',
@@ -67,6 +71,8 @@ export class ClientApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.create`,
         message: 'Tạo client thất bại',
@@ -88,6 +94,8 @@ export class ClientApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.update`,
         message: 'Cập nhật client thất bại',
@@ -107,6 +115,8 @@ export class ClientApp extends BaseApp {
 
       this.getServices().cloudinary.deleteByPaths([oldClient.image]);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.delete`,
         message: 'Cập nhật client thất bại',

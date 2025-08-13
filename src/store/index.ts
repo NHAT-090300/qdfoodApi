@@ -16,9 +16,11 @@ import {
   MongoSupplier,
   MongoRevenue,
   MongoProductPrice,
+  MongoProductPriceProposal,
   MongoOrder,
   MongoInventory,
   MongoInventoryTransaction,
+  MongoProductLog,
   MongoOtp,
   MongoSubCategory,
 } from './mongo';
@@ -39,9 +41,11 @@ class MongoStores {
   supplier?: MongoSupplier;
   revenue?: MongoRevenue;
   productPrice?: MongoProductPrice;
+  productPriceProposal?: MongoProductPriceProposal;
   order?: MongoOrder;
   inventory?: MongoInventory;
   inventoryTransaction?: MongoInventoryTransaction;
+  productLog?: MongoProductLog;
   otp?: MongoOtp;
   subCategory?: MongoSubCategory;
 }
@@ -104,9 +108,11 @@ export default class MongoStore {
       this.stores.supplier = new MongoSupplier(this.db);
       this.stores.revenue = new MongoRevenue(this.db);
       this.stores.productPrice = new MongoProductPrice(this.db);
+      this.stores.productPriceProposal = new MongoProductPriceProposal(this.db);
       this.stores.order = new MongoOrder(this.db);
       this.stores.inventory = new MongoInventory(this.db);
       this.stores.inventoryTransaction = new MongoInventoryTransaction(this.db);
+      this.stores.productLog = new MongoProductLog(this.db);
       this.stores.otp = new MongoOtp(this.db);
       this.stores.subCategory = new MongoSubCategory(this.db);
     }
@@ -234,6 +240,12 @@ export default class MongoStore {
     }
     return this.stores.productPrice;
   }
+  productPriceProposal() {
+    if (!this.stores.productPriceProposal) {
+      throw new Error('productPriceProposal Store is not setup yet');
+    }
+    return this.stores.productPriceProposal;
+  }
   order() {
     if (!this.stores.order) {
       throw new Error('Order Store is not setup yet');
@@ -251,6 +263,12 @@ export default class MongoStore {
       throw new Error('InventoryTransaction Store is not setup yet');
     }
     return this.stores.inventoryTransaction;
+  }
+  productLog() {
+    if (!this.stores.productLog) {
+      throw new Error('ProductLog Store is not setup yet');
+    }
+    return this.stores.productLog;
   }
   subCategory() {
     if (!this.stores.subCategory) {

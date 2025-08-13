@@ -34,4 +34,6 @@ export enum EInventoryTransactionType {
   IMPORT = 'IMPORT',
   EXPORT = 'EXPORT',
   RETURN_DAMAGED = 'RETURN_DAMAGED',
+  PRODUC_IMPORT = 'PRODUC_IMPORT',
+  PRODUC_EXPORT = ' PRODUC_EXPORT',
 }

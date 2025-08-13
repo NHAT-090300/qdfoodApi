@@ -6,7 +6,7 @@ import { ERole } from 'interface';
 export function initInventory(api: API) {
   api.baseRoutes.inventory.get(
     '/list',
-    api.handler(authentication(ERole.USER)),
+    api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getAll),
   );
   api.baseRoutes.inventory.post(
@@ -22,13 +22,13 @@ export function initInventory(api: API) {
   );
   api.baseRoutes.inventory.get(
     '/',
-    api.handler(authentication(ERole.USER)),
+    api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getPagination),
   );
 
   api.baseRoutes.inventory.get(
     '/:id',
-    api.handler(authentication(ERole.USER)),
+    api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getDetail),
   );
   api.baseRoutes.inventory.post(

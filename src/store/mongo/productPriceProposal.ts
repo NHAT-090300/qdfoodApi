@@ -1,29 +1,35 @@
-import { ESortOrder, IProductPrice, IProductPriceFilter } from 'interface';
+import {
+  ESortOrder,
+  EStatusPriceProposal,
+  IProductPrice,
+  IProductPriceProposal,
+  IProductPriceProposalFilter,
+} from 'interface';
 import { isNumber } from 'lodash';
-import { ProductPrice } from 'model';
+import { ProductPriceProposal } from 'model';
 import { ClientSession, Db, ObjectId } from 'mongodb';
 import { createUnsignedRegex } from 'utils';
 
 import { BaseStore } from './base';
 
-export class MongoProductPrice extends BaseStore<IProductPrice> {
+export class MongoProductPriceProposal extends BaseStore<IProductPriceProposal> {
   constructor(db: Db) {
-    super(db, 'product_prices');
+    super(db, 'product_prices_proposal');
   }
 
   private getProject(custom: object = {}) {
     return {
       _id: 1,
-      customPrice: 1,
-      productId: 1,
-      userId: 1,
+      title: 1,
+      url: 1,
+      image: 1,
       createdAt: 1,
       updatedAt: 1,
       ...custom,
     };
   }
 
-  private getQuery(filters: IProductPriceFilter) {
+  private getQuery(filters: IProductPriceProposalFilter) {
     const condition: Record<string, any> = {
       parentId: null,
     };
@@ -100,7 +106,7 @@ export class MongoProductPrice extends BaseStore<IProductPrice> {
     return result ? result.productIds.map((item: any) => item?.toString()) : [];
   }
 
-  async getPaginateAdmin(filters: IProductPriceFilter) {
+  async getPaginateAdmin(filters: IProductPriceProposalFilter) {
     const { condition, sort, paginate, conditionProduct } = this.getQuery(filters);
 
     const productIds = await this.getUserProductIds(condition?.userId);
@@ -145,19 +151,21 @@ export class MongoProductPrice extends BaseStore<IProductPrice> {
     };
   }
 
-  async getList(filters: IProductPriceFilter) {
+  async getList(filters: IProductPriceProposalFilter) {
     const { condition } = this.getQuery(filters);
     return this.collection
-      .find<IProductPrice>(condition, { projection: this.getProject() })
+      .find<IProductPriceProposal>(condition, { projection: this.getProject() })
       .toArray();
   }
 
-  async getOne(filters: IProductPriceFilter) {
+  async getOne(filters: IProductPriceProposalFilter) {
     const { condition } = this.getQuery(filters);
-    return this.collection.findOne<IProductPrice>(condition, { projection: this.getProject() });
+    return this.collection.findOne<IProductPriceProposal>(condition, {
+      projection: this.getProject(),
+    });
   }
 
-  async createOne(data: ProductPrice, session?: ClientSession) {
+  async createOne(data: ProductPriceProposal, session?: ClientSession) {
     data.preSave();
 
     const result = await this.collection.insertOne({ ...data }, { session });
@@ -165,7 +173,7 @@ export class MongoProductPrice extends BaseStore<IProductPrice> {
     return data;
   }
 
-  async updateOne(id: string, data: ProductPrice, session?: ClientSession) {
+  async updateOne(id: string, data: ProductPriceProposal, session?: ClientSession) {
     data.preUpdate();
 
     await this.baseUpdate({ _id: new ObjectId(id) }, { $set: data }, { session });
@@ -173,15 +181,48 @@ export class MongoProductPrice extends BaseStore<IProductPrice> {
     return data;
   }
 
-  async bulkProductPrice(userId: string, productIds: string[]) {
+  async bulkProductPriceProposal(userId: string, productIds: string[]) {
     const userObjectId = new ObjectId(userId);
 
     const docs = productIds?.map((pro) => ({
       userId: userObjectId,
       productId: new ObjectId(pro),
       customPrice: 0,
+      status: EStatusPriceProposal.PENDING,
     }));
 
     return await this.collection.insertMany(docs);
+  }
+
+  async upsertPriceProposals(userId: string, prices: IProductPrice[]) {
+    const bulkOps = prices.map((price) => ({
+      updateOne: {
+        filter: {
+          userId: new ObjectId(userId),
+          productId: new ObjectId(price.productId),
+        },
+        update: {
+          $set: {
+            customPrice: price.customPrice,
+            status: EStatusPriceProposal.PENDING,
+            updatedAt: new Date(),
+          },
+          $setOnInsert: {
+            userId: new ObjectId(userId),
+            productId: new ObjectId(price.productId),
+            createdAt: new Date(),
+          },
+        },
+        upsert: true,
+      },
+    }));
+
+    const result = await this.collection.bulkWrite(bulkOps);
+    console.log({
+      matched: result.matchedCount,
+      modified: result.modifiedCount,
+      upserted: result.upsertedCount,
+    });
+    return result;
   }
 }

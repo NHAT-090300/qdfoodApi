@@ -12,8 +12,27 @@ export class UserApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getPaginate`,
+        message: 'Lấy danh sách user thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+
+  async getUserDebtPaginate(filters: IUserFilter) {
+    try {
+      const result = await this.getStore().user().getUserDebtPaginate(filters);
+
+      return result;
+    } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
+      throw new AppError({
+        id: `${where}.getUserDebtPaginate`,
         message: 'Lấy danh sách user thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         detail: error,
@@ -25,6 +44,8 @@ export class UserApp extends BaseApp {
     try {
       return await this.getStore().user().getList(filters);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getList`,
         message: 'Lấy danh sách user thất bại',
@@ -40,6 +61,7 @@ export class UserApp extends BaseApp {
         .user()
         .findById(id, {
           projection: {
+            _id: 1,
             avatar: 1,
             name: 1,
             email: 1,
@@ -100,6 +122,8 @@ export class UserApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.create`,
         message: 'Tạo user thất bại',
@@ -127,6 +151,8 @@ export class UserApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.update`,
         message: 'Cập nhật user thất bại',
@@ -153,6 +179,8 @@ export class UserApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.update`,
         message: 'Cập nhật user thất bại',
@@ -184,6 +212,8 @@ export class UserApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.update`,
         message: 'Cập nhật user thất bại',
@@ -208,6 +238,8 @@ export class UserApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.update`,
         message: 'Cập nhật user thất bại',
@@ -233,6 +265,8 @@ export class UserApp extends BaseApp {
         totalCate,
       };
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.update`,
         message: 'Cập nhật user thất bại',

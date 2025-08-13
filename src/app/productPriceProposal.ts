@@ -1,16 +1,16 @@
 import { StatusCodes } from 'http-status-codes';
 
-import { IProductPriceFilter } from 'interface';
-import { AppError, ProductPrice } from 'model';
+import { IProductPrice, IProductPriceProposalFilter } from 'interface';
+import { AppError, ProductPriceProposal } from 'model';
 import { ObjectId } from 'mongodb';
 import BaseApp from './base';
 
-const where = 'App.productPrice';
+const where = 'App.productPriceProposal';
 
-export class ProductPriceApp extends BaseApp {
-  async getPaginateAdmin(filters: IProductPriceFilter) {
+export class ProductPriceProposalApp extends BaseApp {
+  async getPaginateAdmin(filters: IProductPriceProposalFilter) {
     try {
-      const result = await this.getStore().productPrice().getPaginateAdmin(filters);
+      const result = await this.getStore().productPriceProposal().getPaginateAdmin(filters);
 
       return result;
     } catch (error: any) {
@@ -18,50 +18,66 @@ export class ProductPriceApp extends BaseApp {
 
       throw new AppError({
         id: `${where}.getPaginate`,
-        message: 'Lấy danh sách productPrice thất bại',
+        message: 'Lấy danh sách productPriceProposal thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         detail: error,
       });
     }
   }
 
-  async bulkCreateProductPrice(userId: string, productIds: string[]) {
+  async bulkCreateProductPriceProposal(userId: string, productIds: string[]) {
     try {
-      return this.getStore().productPrice().bulkProductPrice(userId, productIds);
+      return this.getStore().productPriceProposal().bulkProductPriceProposal(userId, productIds);
     } catch (error: any) {
       if (error instanceof AppError) throw error;
 
       throw new AppError({
         id: `${where}.getPaginate`,
-        message: 'Lấy danh sách productPrice thất bại',
+        message: 'Lấy danh sách productPriceProposal thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         detail: error,
       });
     }
   }
-  async getList(filters: IProductPriceFilter) {
+
+  async upsertPriceProposals(userId: string, prices: IProductPrice[]) {
     try {
-      return await this.getStore().productPrice().getList(filters);
+      return this.getStore().productPriceProposal().upsertPriceProposals(userId, prices);
+    } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
+      throw new AppError({
+        id: `${where}.getPaginate`,
+        message: 'Lấy danh sách productPriceProposal thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+
+  async getList(filters: IProductPriceProposalFilter) {
+    try {
+      return await this.getStore().productPriceProposal().getList(filters);
     } catch (error: any) {
       if (error instanceof AppError) throw error;
 
       throw new AppError({
         id: `${where}.getList`,
-        message: 'Lấy danh sách productPrice thất bại',
+        message: 'Lấy danh sách productPriceProposal thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         detail: error,
       });
     }
   }
 
-  async getById(productPriceId: string) {
+  async getById(productPriceProposalId: string) {
     try {
-      const data = await this.getStore().productPrice().findById(productPriceId);
+      const data = await this.getStore().productPriceProposal().findById(productPriceProposalId);
 
       if (!data) {
         throw new AppError({
           id: `${where}.getById`,
-          message: 'ProductPrice không có hoặc chưa tồn tại',
+          message: 'ProductPriceProposal không có hoặc chưa tồn tại',
           statusCode: StatusCodes.NOT_FOUND,
         });
       }
@@ -72,43 +88,16 @@ export class ProductPriceApp extends BaseApp {
 
       throw new AppError({
         id: `${where}.getById`,
-        message: 'Lấy dữ liệu productPrice không thành công',
+        message: 'Lấy dữ liệu productPriceProposal không thành công',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         detail: error,
       });
     }
   }
 
-  async getByUserId(userId: string) {
+  async create(data: ProductPriceProposal) {
     try {
-      const data = await this.getStore().productPrice().getList({
-        userId,
-      });
-
-      if (!data) {
-        throw new AppError({
-          id: `${where}.getByUserId`,
-          message: 'productPrice lấy dữ liệu không thành công',
-          statusCode: StatusCodes.NOT_FOUND,
-        });
-      }
-
-      return data;
-    } catch (error: any) {
-      if (error instanceof AppError) throw error;
-
-      throw new AppError({
-        id: `${where}.getById`,
-        message: 'Lấy dữ liệu productPrice không thành công',
-        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-        detail: error,
-      });
-    }
-  }
-
-  async create(data: ProductPrice) {
-    try {
-      const result = await this.getStore().productPrice().createOne(data);
+      const result = await this.getStore().productPriceProposal().createOne(data);
 
       return result;
     } catch (error: any) {
@@ -116,16 +105,18 @@ export class ProductPriceApp extends BaseApp {
 
       throw new AppError({
         id: `${where}.create`,
-        message: 'Tạo productPrice thất bại',
+        message: 'Tạo productPriceProposal thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         detail: error,
       });
     }
   }
 
-  async update(productPriceId: string, data: ProductPrice) {
+  async update(productPriceProposalId: string, data: ProductPriceProposal) {
     try {
-      const result = await this.getStore().productPrice().updateOne(productPriceId, data);
+      const result = await this.getStore()
+        .productPriceProposal()
+        .updateOne(productPriceProposalId, data);
 
       return result;
     } catch (error: any) {
@@ -133,24 +124,24 @@ export class ProductPriceApp extends BaseApp {
 
       throw new AppError({
         id: `${where}.update`,
-        message: 'Cập nhật productPrice thất bại',
+        message: 'Cập nhật productPriceProposal thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         detail: error,
       });
     }
   }
 
-  async delete(productPriceId: string) {
+  async delete(productPriceProposalId: string) {
     try {
       await this.getStore()
-        .productPrice()
-        .baseDelete({ _id: new ObjectId(productPriceId) });
+        .productPriceProposal()
+        .baseDelete({ _id: new ObjectId(productPriceProposalId) });
     } catch (error: any) {
       if (error instanceof AppError) throw error;
 
       throw new AppError({
         id: `${where}.delete`,
-        message: 'Cập nhật productPrice thất bại',
+        message: 'Cập nhật productPriceProposal thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         detail: error,
       });

@@ -1,10 +1,10 @@
 import { ESortOrder, IProduct, IProductFilter } from 'interface';
-import { escapeRegExp, isNumber } from 'lodash';
+import { isArray, isNumber } from 'lodash';
 import { logger } from 'logger';
 import { Product } from 'model';
 import { ClientSession, Db, ObjectId } from 'mongodb';
 import slugify from 'slugify';
-import { removeVietnameseTones } from 'utils';
+import { createUnsignedRegex } from 'utils';
 
 import { BaseStore } from './base';
 
@@ -54,6 +54,7 @@ export class MongoProduct extends BaseStore<IProduct> {
       slug: 1,
       category: 1,
       code: 1,
+      type: 1,
       isRetailAvailable: 1,
       ...custom,
     };
@@ -72,14 +73,21 @@ export class MongoProduct extends BaseStore<IProduct> {
       hasPaginate: false,
     };
 
-    if (filters.keyword && ObjectId.isValid(filters.keyword)) {
-      condition._id = new ObjectId(filters.keyword);
+    if (filters.keyword) {
+      const keyword = filters.keyword.trim();
+
+      if (ObjectId.isValid(keyword)) {
+        condition.$or = [{ _id: new ObjectId(keyword) }];
+      } else {
+        const regex = createUnsignedRegex(keyword);
+        condition.$or = [{ name: { $regex: regex } }, { code: { $regex: regex } }];
+      }
     }
 
-    if (filters.keyword && !ObjectId.isValid(filters?.keyword)) {
-      const keywordUnsigned = removeVietnameseTones(filters.keyword);
-      const regex = new RegExp(escapeRegExp(keywordUnsigned), 'i');
-      condition.$or = [{ name: { $regex: regex } }];
+    if (filters?.type?.length && isArray(filters.type)) {
+      condition.type = {
+        $in: filters.type,
+      };
     }
 
     if (filters.ninProduct?.length && Array.isArray(filters?.ninProduct)) {
@@ -590,6 +598,32 @@ export class MongoProduct extends BaseStore<IProduct> {
         totalItems: totalData, // Tổng số sản phẩm
       },
     };
+  }
+
+  async getListWithInventory(filters: IProductFilter) {
+    const { condition } = this.getQuery(filters);
+
+    return this.collection
+      .aggregate([
+        { $match: condition },
+        {
+          $lookup: {
+            from: 'inventory',
+            localField: '_id',
+            foreignField: 'productId',
+            as: 'inventory',
+          },
+        },
+        { $unwind: { path: '$inventory', preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            ...this.getProject(),
+            quantity: '$inventory.quantity',
+            warehousePrice: '$inventory.warehousePrice',
+          },
+        },
+      ])
+      .toArray();
   }
 
   async getList(filters: IProductFilter) {

@@ -4,7 +4,7 @@ import * as yup from 'yup';
 import slugify from 'slugify';
 import { v1 as uuidv1 } from 'uuid';
 
-import { EUnit, IProduct, ISupplierInfo } from 'interface';
+import { EProductType, EUnit, IProduct, ISupplierInfo } from 'interface';
 import { invalidInformation, validateWithYup } from 'utils';
 import moment from 'moment';
 
@@ -20,6 +20,7 @@ export class Product implements IProduct {
   subCategoryId?: ObjectId;
   defaultPrice: number;
   unitName: EUnit;
+  type: EProductType;
   suppliers?: ISupplierInfo[];
   isRetailAvailable?: boolean;
   slug?: string;
@@ -36,6 +37,7 @@ export class Product implements IProduct {
     this.subCategoryId = data.subCategoryId;
     this.defaultPrice = data.defaultPrice || 0;
     this.unitName = data.unitName;
+    this.type = data.type || EProductType?.PRODUCT;
     this.suppliers = data.suppliers ?? [];
     this.isRetailAvailable = data.isRetailAvailable;
     this.slug = data.slug;
@@ -55,10 +57,15 @@ export class Product implements IProduct {
       code: yup.string(),
       name: yup.string().required(),
       description: yup.string(),
-      categoryId: yup.string().objectId().required(),
-      subCategoryId: yup.string().objectId(),
+      categoryId: yup.string().objectId().nullable().required(),
+      subCategoryId: yup.string().objectId().nullable(),
       defaultPrice: yup.number().required().default(0),
       unitName: yup.string().oneOf(Object.values(EUnit)).required(),
+      type: yup
+        .string()
+        .oneOf(Object.values(EProductType))
+        .default(EProductType.PRODUCT)
+        .required(),
       isRetailAvailable: yup.boolean().default(false),
       suppliers: yup.array().of(
         yup.object().shape({

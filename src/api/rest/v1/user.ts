@@ -24,6 +24,11 @@ export function initUser(api: API) {
     api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getPagination),
   );
+  api.baseRoutes.user.get(
+    '/summary',
+    api.handler(authentication(ERole.ADMIN)),
+    api.handler(handlers.getUserDebtPaginate),
+  );
   api.baseRoutes.user.post(
     '/create',
     api.handler(authentication(ERole.ADMIN)),

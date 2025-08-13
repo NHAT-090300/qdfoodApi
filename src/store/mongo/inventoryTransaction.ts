@@ -1,8 +1,9 @@
-import { escapeRegExp, isNumber } from 'lodash';
-import { ClientSession, Db, ObjectId } from 'mongodb';
-
 import { ESortOrder, IInventoryTransaction, IInventoryTransactionFilter } from 'interface';
+import { isArray, isNumber } from 'lodash';
 import { InventoryTransaction } from 'model';
+import { ClientSession, Db, ObjectId } from 'mongodb';
+import { createUnsignedRegex } from 'utils';
+
 import { BaseStore } from './base';
 
 export class MongoInventoryTransaction extends BaseStore<IInventoryTransaction> {
@@ -36,16 +37,18 @@ export class MongoInventoryTransaction extends BaseStore<IInventoryTransaction> 
     };
 
     if (filters.keyword) {
-      const regex = new RegExp(escapeRegExp(filters.keyword), 'i');
-      condition.$or = [{ name: { $regex: regex } }];
-    }
-
-    if (filters.keywordProduct) {
-      const regex = new RegExp(escapeRegExp(filters.keywordProduct), 'i');
+      const keyword = filters.keyword.trim();
+      const regex = createUnsignedRegex(keyword);
       conditionProduct.$or = [
         { 'product.name': { $regex: regex } },
         { 'product.code': { $regex: regex } },
       ];
+    }
+
+    if (filters?.type?.length && isArray(filters.type)) {
+      condition.type = {
+        $in: filters.type,
+      };
     }
 
     if (Array.isArray(filters.ids) && filters.ids.length) {

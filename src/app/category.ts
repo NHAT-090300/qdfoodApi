@@ -14,6 +14,8 @@ export class CategoryApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getPaginate`,
         message: 'Lấy danh sách category thất bại',
@@ -27,6 +29,8 @@ export class CategoryApp extends BaseApp {
     try {
       return await this.getStore().category().getList(filters);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getList`,
         message: 'Lấy danh sách category thất bại',
@@ -40,6 +44,8 @@ export class CategoryApp extends BaseApp {
     try {
       return await this.getStore().category().getListSubCategory();
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.getListSubCategory`,
         message: 'Lấy danh sách category thất bại',
@@ -80,6 +86,8 @@ export class CategoryApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.create`,
         message: 'Tạo category thất bại',
@@ -101,6 +109,8 @@ export class CategoryApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.update`,
         message: 'Cập nhật category thất bại',
@@ -120,6 +130,8 @@ export class CategoryApp extends BaseApp {
 
       this.getServices().cloudinary.deleteByPaths([oldCategory.image]);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
       throw new AppError({
         id: `${where}.delete`,
         message: 'Xóa category thất bại',

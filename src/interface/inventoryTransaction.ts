@@ -8,8 +8,9 @@ export interface IInventoryTransaction {
   type: EInventoryTransactionType;
   quantity: number;
   orderId?: ObjectId;
+  productLogId?: ObjectId;
   relatedOrderId?: ObjectId;
-  warehousePrice: number;
+  price: number;
   refundPrice?: number;
   note?: string;
   createdAt?: Date;
@@ -18,8 +19,8 @@ export interface IInventoryTransaction {
 
 export interface IInventoryTransactionFilter {
   keyword?: string;
-  keywordProduct?: string;
   ids?: string[];
+  type?: string[];
   page?: number;
   limit?: number;
   sort?: string;
