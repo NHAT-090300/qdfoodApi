@@ -1,5 +1,5 @@
 import to from 'await-to-js';
-import { IDocument } from 'interface';
+import { ETypeDocument, IDocument } from 'interface';
 import { ObjectId } from 'mongodb';
 import slugify from 'slugify';
 import { invalidInformation, validateWithYup } from 'utils';
@@ -12,6 +12,7 @@ export class Document implements IDocument {
   _id?: ObjectId;
   name: string;
   description?: string;
+  type: ETypeDocument;
   url: string;
   slug?: string;
   createdAt?: Date;
@@ -22,6 +23,7 @@ export class Document implements IDocument {
     this.name = data.name;
     this.description = data.description;
     this.url = data.url;
+    this.type = data.type || ETypeDocument.CERTIFICATE;
     this.slug = data.slug;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
@@ -31,6 +33,7 @@ export class Document implements IDocument {
     const schema = yup.object().shape({
       name: yup.string().required(),
       description: yup.string(),
+      type: yup.string().oneOf(Object.values(ETypeDocument)).default(ETypeDocument.CERTIFICATE),
       url: yup.string().url().required(),
       slug: yup.string(),
     });

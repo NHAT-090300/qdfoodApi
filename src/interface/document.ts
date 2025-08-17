@@ -6,9 +6,15 @@ export interface IDocument {
   name: string;
   description?: string;
   url: string;
+  type: ETypeDocument;
   slug?: string;
   createdAt?: Date;
   updatedAt?: Date;
+}
+
+export enum ETypeDocument {
+  CONTACT = 'CONTACT',
+  CERTIFICATE = 'CERTIFICATE',
 }
 
 export interface IDocumentFilter {

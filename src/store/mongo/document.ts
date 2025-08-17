@@ -16,6 +16,7 @@ export class MongoDocument extends BaseStore<IDocument> {
       name: 1,
       description: 1,
       url: 1,
+      atype: 1,
       slug: 1,
       createdAt: 1,
       updatedAt: 1,
