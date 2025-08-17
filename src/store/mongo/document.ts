@@ -16,7 +16,7 @@ export class MongoDocument extends BaseStore<IDocument> {
       name: 1,
       description: 1,
       url: 1,
-      atype: 1,
+      type: 1,
       slug: 1,
       createdAt: 1,
       updatedAt: 1,
@@ -45,6 +45,12 @@ export class MongoDocument extends BaseStore<IDocument> {
     if (Array.isArray(filters.ids) && filters.ids.length) {
       condition._id = {
         $in: filters.ids.map((id) => (ObjectId.isValid(id) ? new ObjectId(id) : id)),
+      };
+    }
+
+    if (Array.isArray(filters.type) && filters.type.length) {
+      condition.type = {
+        $in: filters.type,
       };
     }
 

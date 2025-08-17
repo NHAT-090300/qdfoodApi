@@ -19,6 +19,7 @@ export enum ETypeDocument {
 
 export interface IDocumentFilter {
   keyword?: string;
+  type?: ETypeDocument[];
   ids?: string[];
   page?: number;
   limit?: number;
