@@ -7,17 +7,17 @@ export function initClient(api: API) {
   api.baseRoutes.client.get('/list/web-user', api.handler(handlers.getAll));
   api.baseRoutes.client.get(
     '/list',
-    api.handler(authentication(ERole.USER)),
+    api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getAll),
   );
   api.baseRoutes.client.get(
     '/',
-    api.handler(authentication(ERole.USER)),
+    api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getPagination),
   );
   api.baseRoutes.client.get(
     '/:id',
-    api.handler(authentication(ERole.USER)),
+    api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getDetail),
   );
   api.baseRoutes.client.post(

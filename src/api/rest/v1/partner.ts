@@ -7,17 +7,17 @@ export function initPartner(api: API) {
   api.baseRoutes.partner.get('/list/web-user', api.handler(handlers.getAll));
   api.baseRoutes.partner.get(
     '/list',
-    api.handler(authentication(ERole.USER)),
+    api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getAll),
   );
   api.baseRoutes.partner.get(
     '/',
-    api.handler(authentication(ERole.USER)),
+    api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getPagination),
   );
   api.baseRoutes.partner.get(
     '/:id',
-    api.handler(authentication(ERole.USER)),
+    api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getDetail),
   );
   api.baseRoutes.partner.post(
