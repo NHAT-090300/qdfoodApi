@@ -8,6 +8,7 @@ import {
   MongoBanner,
   MongoUser,
   MongoNews,
+  MongoDocument,
   MongoCategory,
   MongoProduct,
   MongoPartner,
@@ -33,6 +34,7 @@ class MongoStores {
   banner?: MongoBanner;
   user?: MongoUser;
   news?: MongoNews;
+  document?: MongoDocument;
   category?: MongoCategory;
   product?: MongoProduct;
   partner?: MongoPartner;
@@ -100,6 +102,7 @@ export default class MongoStore {
       this.stores.banner = new MongoBanner(this.db);
       this.stores.user = new MongoUser(this.db);
       this.stores.news = new MongoNews(this.db);
+      this.stores.document = new MongoDocument(this.db);
       this.stores.category = new MongoCategory(this.db);
       this.stores.product = new MongoProduct(this.db);
       this.stores.partner = new MongoPartner(this.db);
@@ -186,6 +189,13 @@ export default class MongoStore {
       throw new Error('News Store is not setup yet');
     }
     return this.stores.news;
+  }
+
+  document() {
+    if (!this.stores.document) {
+      throw new Error('Document Store is not setup yet');
+    }
+    return this.stores.document;
   }
 
   category() {

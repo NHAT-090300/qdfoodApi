@@ -5,6 +5,7 @@ export * from './banner';
 export * from './config';
 export * from './user';
 export * from './news';
+export * from './document';
 export * from './category';
 export * from './product';
 export * from './file';

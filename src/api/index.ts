@@ -12,6 +12,7 @@ class BaseRoutes {
   banners: Router = Router();
   user: Router = Router();
   news: Router = Router();
+  document: Router = Router();
   category: Router = Router();
   auth: Router = Router();
   product: Router = Router();
@@ -36,6 +37,7 @@ class BaseRoutes {
     this.v1.use('/banner', this.banners);
     this.v1.use('/user', this.user);
     this.v1.use('/news', this.news);
+    this.v1.use('/document', this.document);
     this.v1.use('/category', this.category);
     this.v1.use('/sub-category', this.subCategory);
     this.v1.use('/auth', this.auth);
@@ -69,6 +71,7 @@ export class API {
     apiV1.initBanner(this);
     apiV1.initUser(this);
     apiV1.initNews(this);
+    apiV1.initDocument(this);
     apiV1.initCategory(this);
     apiV1.initSubCategory(this);
     apiV1.initAuth(this);
