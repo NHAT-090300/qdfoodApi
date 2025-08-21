@@ -4,11 +4,7 @@ import { authentication } from '@api/middleware';
 import { ERole } from 'interface';
 
 export function initBanner(api: API) {
-  api.baseRoutes.banners.get(
-    '/list',
-    api.handler(authentication(ERole.USER)),
-    api.handler(handlers.getAll),
-  );
+  api.baseRoutes.banners.get('/list', api.handler(handlers.getAll));
   api.baseRoutes.banners.get(
     '/',
     api.handler(authentication(ERole.USER)),

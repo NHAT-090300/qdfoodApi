@@ -3,8 +3,8 @@ import { ESortOrder } from './enum';
 
 export interface IBanner {
   _id?: ObjectId;
-  title: string;
-  url: string;
+  title?: string;
+  url?: string;
   image: string;
   createdAt?: Date;
   updatedAt?: Date;

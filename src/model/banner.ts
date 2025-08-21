@@ -9,8 +9,8 @@ const where = 'model.banner';
 
 export class Banner implements IBanner {
   _id?: ObjectId;
-  title: string;
-  url: string;
+  title?: string;
+  url?: string;
   image: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -26,8 +26,8 @@ export class Banner implements IBanner {
 
   static async sequelize(data: any) {
     const schema = yup.object().shape({
-      title: yup.string().required(),
-      url: yup.string().url().required(),
+      title: yup.string(),
+      url: yup.string(),
       image: yup.string().required(),
     });
 
