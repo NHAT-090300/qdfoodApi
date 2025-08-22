@@ -103,6 +103,46 @@ export async function upsertPriceProposals(
   }
 }
 
+export async function getPaginate(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const userId = req.params.userId as string;
+
+    const { limit = 10, page = 1, order, sort, keyword } = req.query;
+    const filterObject = tryParseJson(req.query.filters);
+
+    const filters: IProductPriceProposalFilter = {
+      ...filterObject,
+      limit: Number(limit),
+      page: Number(page),
+      order,
+      sort,
+      keyword,
+      userId,
+    };
+
+    if (!isValidId(filters?.userId)) {
+      throw new AppError({
+        id: `${where}.getPaginate`,
+        message: 'userId không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    validatePagination(filters.page, filters.limit);
+
+    const result = await new ProductPriceProposalApp(ctx).getPaginateAdmin(filters);
+
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function getPaginateAdmin(
   ctx: Context,
   req: Request,

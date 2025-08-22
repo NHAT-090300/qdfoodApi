@@ -5,18 +5,23 @@ import { ERole } from 'interface';
 
 export function initProductPrice(api: API) {
   api.baseRoutes.productPrice.get(
-    '/list',
+    '/web-user',
     api.handler(authentication(ERole.USER)),
+    api.handler(handlers.getPaginate),
+  );
+  api.baseRoutes.productPrice.get(
+    '/list',
+    api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getAll),
   );
   api.baseRoutes.productPrice.get(
     '/',
-    api.handler(authentication(ERole.USER)),
+    api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getPaginateAdmin),
   );
   api.baseRoutes.productPrice.get(
     '/:id',
-    api.handler(authentication(ERole.USER)),
+    api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.getDetail),
   );
   api.baseRoutes.productPrice.post(
