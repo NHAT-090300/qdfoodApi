@@ -76,7 +76,6 @@ export interface IProductFilter {
   order?: ESortOrder;
   minPrice?: number;
   maxPrice?: number;
-  district?: string;
   city?: string;
   direction?: string;
   category?: string;

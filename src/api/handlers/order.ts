@@ -78,12 +78,7 @@ export async function createOrderUser(
       });
     }
 
-    if (
-      !shippingAddress?.address ||
-      !shippingAddress?.city ||
-      !shippingAddress?.district ||
-      !shippingAddress?.ward
-    ) {
+    if (!shippingAddress?.address || !shippingAddress?.city || !shippingAddress?.ward) {
       throw new AppError({
         id: `${where}.createOrderUser`,
         message: 'Địa chỉ giao hàng không hợp lệ',

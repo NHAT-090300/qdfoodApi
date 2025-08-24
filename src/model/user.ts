@@ -73,7 +73,6 @@ export class User implements IUser {
       address: yup.object().shape({
         street: yup.string(),
         ward: yup.string(),
-        district: yup.string(),
         city: yup.string(),
       }),
     });
