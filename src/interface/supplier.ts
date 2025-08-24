@@ -9,7 +9,6 @@ export interface ISupplier {
   addressInfo?: {
     address: string;
     ward: string;
-    district: string;
     city: string;
   };
   createdAt?: Date;

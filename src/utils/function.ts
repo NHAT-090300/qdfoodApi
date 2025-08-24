@@ -3,15 +3,13 @@ import {
   EOrderStatus,
   IErrors,
   IOrderShippingAddress,
-  IProductLog,
   IProductLogItem,
 } from 'interface';
 import { ObjectId } from 'mongodb';
 import fs from 'fs';
 import { logger } from 'logger';
-import districts from 'shared/constants/districts.json';
-import provinces from 'shared/constants/provinces.json';
-import wards from 'shared/constants/wards.json';
+import provinces from '@constants/cities.json';
+import wards from '@constants/wards.json';
 import { isNaN } from 'lodash';
 
 export function generateRandomNumber() {
@@ -213,11 +211,9 @@ export function getOrderAddress(info: IOrderShippingAddress): string {
   if (info?.address) list.push(info.address);
 
   const province = provinces?.find((item) => item.code === info.city)?.name_with_type;
-  const district = districts?.find((item) => item.code === info.district)?.name_with_type;
   const ward = wards?.find((item) => item.code === info.ward)?.name_with_type;
 
   if (ward) list.push(ward);
-  if (district) list.push(district);
   if (province) list.push(province);
 
   return list.join(', ');

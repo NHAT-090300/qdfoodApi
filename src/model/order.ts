@@ -16,7 +16,6 @@ export class Order implements IOrder {
   shippingAddress: {
     address: string;
     city: string;
-    district: string;
     ward: string;
   };
   items: {
@@ -62,7 +61,6 @@ export class Order implements IOrder {
         .shape({
           address: yup.string().required(),
           city: yup.string().required(),
-          district: yup.string().required(),
           ward: yup.string().required(),
         })
         .required(),

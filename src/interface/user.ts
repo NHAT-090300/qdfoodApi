@@ -10,7 +10,6 @@ export interface IUser {
   phoneNumber?: string;
   address?: {
     city?: string;
-    district?: string;
     ward?: string;
     street?: string;
   };

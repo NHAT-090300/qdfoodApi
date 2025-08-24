@@ -15,7 +15,6 @@ export class Supplier implements ISupplier {
   addressInfo?: {
     address: string;
     ward: string;
-    district: string;
     city: string;
   };
   createdAt?: Date;
@@ -39,7 +38,6 @@ export class Supplier implements ISupplier {
       addressInfo: yup.object().shape({
         address: yup.string().required(),
         ward: yup.string().required(),
-        district: yup.string().required(),
         city: yup.string().required(),
       }),
     });

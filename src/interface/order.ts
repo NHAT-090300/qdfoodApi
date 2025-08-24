@@ -38,7 +38,6 @@ export interface IOrderItem {
 export interface IOrderShippingAddress {
   address: string;
   city: string;
-  district: string;
   ward: string;
 }
 

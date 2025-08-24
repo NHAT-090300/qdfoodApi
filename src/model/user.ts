@@ -16,7 +16,6 @@ export class User implements IUser {
   password: string;
   address?: {
     city?: string;
-    district?: string;
     ward?: string;
     street?: string;
   };
@@ -51,7 +50,6 @@ export class User implements IUser {
       address: yup.object().shape({
         street: yup.string(),
         ward: yup.string(),
-        district: yup.string(),
         city: yup.string(),
       }),
     });
