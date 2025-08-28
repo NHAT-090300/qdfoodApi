@@ -20,9 +20,9 @@ export class MongoProductPriceProposal extends BaseStore<IProductPriceProposal> 
   private getProject(custom: object = {}) {
     return {
       _id: 1,
-      title: 1,
-      url: 1,
-      image: 1,
+      userId: 1,
+      customPrice: 1,
+      productId: 1,
       createdAt: 1,
       updatedAt: 1,
       ...custom,

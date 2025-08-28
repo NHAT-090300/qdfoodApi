@@ -39,6 +39,26 @@ export class ProductPriceApp extends BaseApp {
       });
     }
   }
+
+  async syncPriceProposalsOneUser(userId: string) {
+    try {
+      const proposals = await this.getStore().productPriceProposal().getList({
+        userId,
+      });
+
+      return this.getStore().productPrice().syncPriceProposals(proposals);
+    } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
+      throw new AppError({
+        id: `${where}.getPaginate`,
+        message: 'Lấy danh sách productPrice thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+
   async getList(filters: IProductPriceFilter) {
     try {
       return await this.getStore().productPrice().getList(filters);

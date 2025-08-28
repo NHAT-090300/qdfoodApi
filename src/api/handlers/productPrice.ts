@@ -55,6 +55,32 @@ export async function bulkCreateProductPrice(
   }
 }
 
+export async function syncPriceProposals(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { userId } = req.params;
+
+    if (!ObjectId.isValid(userId)) {
+      throw new AppError({
+        id: 'productPrice.syncPriceProposals',
+        message: 'userId không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+    // notification
+
+    await new ProductPriceApp(ctx).syncPriceProposalsOneUser(userId);
+
+    res.json('ok');
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function getPaginate(
   ctx: Context,
   req: Request,

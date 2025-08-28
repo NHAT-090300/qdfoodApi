@@ -1,4 +1,4 @@
-import { ESortOrder, IProductPrice, IProductPriceFilter } from 'interface';
+import { ESortOrder, IProductPrice, IProductPriceFilter, IProductPriceProposal } from 'interface';
 import { isNumber } from 'lodash';
 import { ProductPrice } from 'model';
 import { ClientSession, Db, ObjectId } from 'mongodb';
@@ -183,5 +183,27 @@ export class MongoProductPrice extends BaseStore<IProductPrice> {
     }));
 
     return await this.collection.insertMany(docs);
+  }
+
+  async syncPriceProposals(proposals: IProductPriceProposal[]) {
+    const ops = proposals?.map((p: IProductPriceProposal) => ({
+      updateOne: {
+        filter: { userId: p.userId, productId: p.productId },
+        update: {
+          $set: {
+            customPrice: p.customPrice,
+            updatedAt: new Date(),
+          },
+          $setOnInsert: {
+            createdAt: new Date(),
+          },
+        },
+        upsert: true,
+      },
+    }));
+
+    if (ops.length > 0) {
+      await this.collection.bulkWrite(ops);
+    }
   }
 }

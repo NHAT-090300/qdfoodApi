@@ -34,6 +34,11 @@ export function initProductPrice(api: API) {
     api.handler(authentication(ERole.ADMIN)),
     api.handler(handlers.bulkCreateProductPrice),
   );
+  api.baseRoutes.productPrice.post(
+    '/sync-price/:userId',
+    api.handler(authentication(ERole.ADMIN)),
+    api.handler(handlers.syncPriceProposals),
+  );
   api.baseRoutes.productPrice.put(
     '/:id',
     api.handler(authentication(ERole.ADMIN)),
