@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb';
-import { ERole, ESortOrder } from './enum';
+import { ERole, ESortOrder, EPermission } from './enum';
 
 export interface IUser {
   _id?: ObjectId;
@@ -13,6 +13,7 @@ export interface IUser {
     ward?: string;
     street?: string;
   };
+  permission?: EPermission[];
   role?: ERole;
   isDelete?: boolean;
   otp?: string;

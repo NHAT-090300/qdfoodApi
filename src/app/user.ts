@@ -73,6 +73,7 @@ export class UserApp extends BaseApp {
             updatedAt: 1,
             password: 1,
             social: 1,
+            permission: 1,
           },
         });
 

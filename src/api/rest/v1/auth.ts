@@ -1,7 +1,7 @@
 import { API } from 'api';
 import * as handlers from 'api/handlers/auth';
+
 import { authentication } from '@api/middleware';
-import { ERole } from 'interface';
 
 export function initAuth(api: API) {
   // admin
@@ -16,7 +16,7 @@ export function initAuth(api: API) {
   api.baseRoutes.auth.post('/refresh-token', api.handler(handlers.handleRefreshToken));
   api.baseRoutes.auth.get(
     '/info',
-    api.handler(authentication(ERole.USER)),
+    api.handler(authentication()),
     api.handler(handlers.getUserInfo),
   );
 }

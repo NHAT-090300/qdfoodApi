@@ -1,52 +1,97 @@
 import { API } from 'api';
 import * as handlers from 'api/handlers/productPrice';
-import { authentication } from '@api/middleware';
-import { ERole } from 'interface';
+import { authentication, authorization } from '@api/middleware';
+import { EPermission, ERole } from 'interface';
 
 export function initProductPrice(api: API) {
   api.baseRoutes.productPrice.get(
     '/web-user',
-    api.handler(authentication(ERole.USER)),
+    api.handler(authentication()),
     api.handler(handlers.getPaginate),
   );
   api.baseRoutes.productPrice.get(
     '/list',
-    api.handler(authentication(ERole.ADMIN)),
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+      }),
+    ),
     api.handler(handlers.getAll),
   );
   api.baseRoutes.productPrice.get(
     '/',
-    api.handler(authentication(ERole.ADMIN)),
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+      }),
+    ),
     api.handler(handlers.getPaginateAdmin),
   );
   api.baseRoutes.productPrice.get(
     '/:id',
-    api.handler(authentication(ERole.ADMIN)),
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+      }),
+    ),
     api.handler(handlers.getDetail),
   );
   api.baseRoutes.productPrice.post(
     '/create',
-    api.handler(authentication(ERole.ADMIN)),
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+        permissions: [EPermission.WRITE_CUSTOM_PRICE],
+      }),
+    ),
     api.handler(handlers.createProductPrice),
   );
   api.baseRoutes.productPrice.post(
     '/bulk-create',
-    api.handler(authentication(ERole.ADMIN)),
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+        permissions: [EPermission.WRITE_CUSTOM_PRICE],
+      }),
+    ),
     api.handler(handlers.bulkCreateProductPrice),
   );
   api.baseRoutes.productPrice.post(
     '/sync-price/:userId',
-    api.handler(authentication(ERole.ADMIN)),
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+        permissions: [EPermission.WRITE_CUSTOM_PRICE],
+      }),
+    ),
     api.handler(handlers.syncPriceProposals),
   );
   api.baseRoutes.productPrice.put(
     '/:id',
-    api.handler(authentication(ERole.ADMIN)),
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+        permissions: [EPermission.WRITE_CUSTOM_PRICE],
+      }),
+    ),
     api.handler(handlers.updateProductPrice),
   );
   api.baseRoutes.productPrice.delete(
     '/:id',
-    api.handler(authentication(ERole.ADMIN)),
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+        permissions: [EPermission.WRITE_CUSTOM_PRICE],
+      }),
+    ),
     api.handler(handlers.deleteProductPrice),
   );
 }

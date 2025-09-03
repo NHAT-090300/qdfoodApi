@@ -2,7 +2,7 @@ import to from 'await-to-js';
 import { ObjectId } from 'mongodb';
 import * as yup from 'yup';
 
-import { IUser, ERole } from 'interface';
+import { IUser, ERole, EPermission } from 'interface';
 import { invalidInformation, validateWithYup } from 'utils';
 
 const where = 'model.user';
@@ -19,6 +19,7 @@ export class User implements IUser {
     ward?: string;
     street?: string;
   };
+  permission?: EPermission[];
   role?: ERole;
   isDelete: boolean;
   createdAt?: Date;
@@ -34,6 +35,7 @@ export class User implements IUser {
     this.phoneNumber = data.phoneNumber || '';
     this.address = data.address;
     this.role = data.role || ERole?.USER;
+    this.permission = data.permission;
     this.isDelete = data.isDelete || false;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
@@ -52,6 +54,16 @@ export class User implements IUser {
         ward: yup.string(),
         city: yup.string(),
       }),
+      permission: yup
+        .array()
+        .of(
+          yup
+            .mixed<EPermission>()
+            .oneOf(Object.values(EPermission) as EPermission[])
+            .defined(),
+        )
+        .default([])
+        .optional(),
     });
 
     const [errors, result] = await to(validateWithYup(schema, data));
@@ -67,7 +79,7 @@ export class User implements IUser {
     const schema = yup.object().shape({
       name: yup.string().required('Name is required'),
       email: yup.string().email('Email is invalid').required('Email is required'),
-      avatar: yup.string().required('Avatar is required'),
+      avatar: yup.string(),
       role: yup.string().oneOf(Object.values(ERole), 'Role invalid'),
       phoneNumber: yup.string(),
       address: yup.object().shape({
@@ -75,6 +87,16 @@ export class User implements IUser {
         ward: yup.string(),
         city: yup.string(),
       }),
+      permission: yup
+        .array()
+        .of(
+          yup
+            .mixed<EPermission>()
+            .oneOf(Object.values(EPermission) as EPermission[])
+            .defined(),
+        )
+        .default([])
+        .optional(),
     });
 
     const [errors, result] = await to(validateWithYup(schema, data));
