@@ -666,7 +666,6 @@ export class MongoProduct extends BaseStore<IProduct> {
       {
         $project: {
           ...this.getProject(),
-          category: 0,
           finalPrice: 1,
         },
       },

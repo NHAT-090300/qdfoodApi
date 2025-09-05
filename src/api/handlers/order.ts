@@ -143,6 +143,19 @@ export async function createOrderUser(
       0,
     );
 
+    const totalParam = items.reduce(
+      (sum: number, item: IOrderItem) => sum + item.quantity * item.price,
+      0,
+    );
+
+    if (total !== totalParam) {
+      throw new AppError({
+        id: `${where}.createOrderUser`,
+        message: 'Tổng tiền không khớp',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
     const data = await Order.sequelize({
       userId,
       status: EOrderStatus?.PENDING,
