@@ -111,7 +111,7 @@ export async function createOrderUser(
 
     const orderItems = items.map((item: IOrderItem) => {
       const product = products?.find((p) => p?._id?.equals(item?.productId));
-      const unitPrice = product?.unitName || 0;
+      const unitName = product?.unitName || 0;
 
       if (!product) {
         throw new AppError({
@@ -132,7 +132,7 @@ export async function createOrderUser(
         productId: item.productId,
         quantity: item.quantity,
         price: product.finalPrice,
-        unitPrice,
+        unitName,
         damagedQuantity: 0,
         refundAmount: 0,
       };

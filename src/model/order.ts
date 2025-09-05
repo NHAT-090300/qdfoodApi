@@ -21,7 +21,7 @@ export class Order implements IOrder {
   items: {
     productId: ObjectId;
     quantity: number;
-    unitPrice: string;
+    unitName: string;
     price: number;
     damagedQuantity?: number;
     refundAmount?: number;
@@ -70,7 +70,7 @@ export class Order implements IOrder {
           yup.object().shape({
             productId: yup.string().objectId().required(),
             quantity: yup.number().required().default(0),
-            unitPrice: yup.string().required(),
+            unitName: yup.string().required(),
             price: yup.number().required().default(0),
             damagedQuantity: yup.number().default(0),
             refundAmount: yup.number().default(0),

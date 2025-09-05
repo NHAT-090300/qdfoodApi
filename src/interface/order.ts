@@ -28,7 +28,7 @@ export enum EPaymentMethod {
 export interface IOrderItem {
   productId: ObjectId;
   quantity: number;
-  unitPrice: string;
+  unitName: string;
   price: number;
   damagedQuantity?: number;
   refundAmount?: number;

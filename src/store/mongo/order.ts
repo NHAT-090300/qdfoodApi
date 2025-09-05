@@ -383,30 +383,95 @@ export class MongoOrder extends BaseStore<IOrder> {
   }
 
   updateOrderItemRefund = async (orderId: string, updateItem: IOrderItem) => {
-    const filter = {
-      _id: new ObjectId(orderId),
-      'items.productId': new ObjectId(updateItem.productId),
-    };
+    const productId = new ObjectId(updateItem.productId);
 
-    const updateFields: any = {};
-    if (updateItem.quantity !== undefined) updateFields['items.$.quantity'] = updateItem.quantity;
-
-    if (updateItem.price !== undefined) updateFields['items.$.price'] = updateItem.price;
-
-    if (updateItem.unitPrice !== undefined)
-      updateFields['items.$.unitPrice'] = updateItem.unitPrice;
-
-    if (updateItem.damagedQuantity !== undefined)
-      updateFields['items.$.damagedQuantity'] = updateItem.damagedQuantity;
-
-    if (updateItem.refundAmount !== undefined)
-      updateFields['items.$.refundAmount'] = updateItem.refundAmount;
-
-    const result = await this.collection.updateOne(filter, {
-      $set: updateFields,
+    // Chỉ update những field có giá trị
+    const fieldsToUpdate: Record<string, any> = {};
+    ['quantity', 'damagedQuantity', 'refundAmount'].forEach((key) => {
+      if (updateItem[key as keyof IOrderItem] !== undefined) {
+        fieldsToUpdate[key] = updateItem[key as keyof IOrderItem];
+      }
     });
 
-    return result;
+    return this.collection.updateOne({ _id: new ObjectId(orderId) }, [
+      {
+        $set: {
+          items: {
+            $map: {
+              input: '$items',
+              as: 'item',
+              in: {
+                $cond: [
+                  { $eq: ['$$item.productId', productId] },
+                  { $mergeObjects: ['$$item', fieldsToUpdate] },
+                  '$$item',
+                ],
+              },
+            },
+          },
+          total: {
+            $reduce: {
+              input: {
+                $map: {
+                  input: '$items',
+                  as: 'item',
+                  in: {
+                    $cond: [
+                      { $eq: ['$$item.productId', productId] },
+                      { $mergeObjects: ['$$item', fieldsToUpdate] },
+                      '$$item',
+                    ],
+                  },
+                },
+              },
+              initialValue: 0,
+              in: {
+                $add: [
+                  '$$value',
+                  {
+                    $multiply: [
+                      {
+                        $subtract: [
+                          { $ifNull: ['$$this.quantity', 0] },
+                          { $ifNull: ['$$this.damagedQuantity', 0] },
+                        ],
+                      },
+                      { $ifNull: ['$$this.price', 0] },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+          unpaidAmount: {
+            $subtract: [
+              '$unpaidAmount',
+              {
+                $multiply: [
+                  { $ifNull: [updateItem.damagedQuantity, 0] },
+                  {
+                    $let: {
+                      vars: {
+                        matchedItem: {
+                          $first: {
+                            $filter: {
+                              input: '$items',
+                              as: 'item',
+                              cond: { $eq: ['$$item.productId', productId] },
+                            },
+                          },
+                        },
+                      },
+                      in: { $ifNull: ['$$matchedItem.price', 0] },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      },
+    ]);
   };
 
   async getStockOrderPaginate(filters: IOrderFilter) {

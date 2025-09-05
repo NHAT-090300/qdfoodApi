@@ -592,6 +592,7 @@ export class OrderApp extends BaseApp {
 
       await this.getStore().order().updateOrderItemRefund(orderId, data);
     } catch (error: any) {
+      console.log(error);
       if (error instanceof AppError) throw error;
 
       throw new AppError({
@@ -705,10 +706,10 @@ export class OrderApp extends BaseApp {
     // Add item rows
     order?.items?.forEach((item: any) => {
       const quantity = Number(item.quantity) || 0;
-      const unitPrice = Number(item.unitPrice) || 0;
-      const total = quantity * unitPrice;
+      const unitName = Number(item.unitName) || 0;
+      const total = quantity * unitName;
 
-      const row = [item.name ?? 'Không có tên', item.code ?? '---', quantity, unitPrice, total];
+      const row = [item.name ?? 'Không có tên', item.code ?? '---', quantity, unitName, total];
       const rowRef = worksheet.addRow(row);
 
       rowRef.eachCell((cell) => {
@@ -778,14 +779,14 @@ export class OrderApp extends BaseApp {
 
     order?.items?.forEach((item: any) => {
       const quantity = Number(item.quantity) || 0;
-      const unitPrice = Number(item.unitPrice) || 0;
-      const total = quantity * unitPrice;
+      const unitName = Number(item.unitName) || 0;
+      const total = quantity * unitName;
 
       tableBody.push([
         item.name ?? 'Không có tên',
         item.code ?? '---',
         quantity,
-        unitPrice.toLocaleString('vi-VN'),
+        unitName.toLocaleString('vi-VN'),
         total.toLocaleString('vi-VN'),
       ]);
     });
