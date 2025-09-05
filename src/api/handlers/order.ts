@@ -96,8 +96,9 @@ export async function createOrderUser(
 
     const productIds = items.map((item: IOrderItem) => item.productId);
 
-    const products = await new ProductApp(ctx).getList({
+    const products = await new ProductApp(ctx).getListByUser({
       ids: productIds,
+      userId,
     });
 
     if (products?.length !== items?.length) {
@@ -130,7 +131,7 @@ export async function createOrderUser(
       return {
         productId: item.productId,
         quantity: item.quantity,
-        price: product.defaultPrice,
+        price: product.finalPrice,
         unitPrice,
         damagedQuantity: 0,
         refundAmount: 0,
@@ -383,6 +384,41 @@ export async function updateStatusOrder(
     }
 
     await new OrderApp(ctx).updateStatus(id, req.body);
+
+    res.json('ok');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function payDebtForOrders(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const paymentVerifierId = req.user?._id as string;
+
+    const { userId, paymentAmount } = req.body;
+
+    if (!isValidId(userId) || !isValidId(paymentVerifierId)) {
+      throw new AppError({
+        id: `${where}.payDebtForOrders`,
+        message: 'id không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    if (paymentAmount <= 0 || Number.isNaN(paymentAmount)) {
+      throw new AppError({
+        id: `${where}.payDebtForOrders`,
+        message: 'Số tiền phải lớn hơn 0',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    await new OrderApp(ctx).payDebtForOrders(userId, paymentAmount, paymentVerifierId);
 
     res.json('ok');
   } catch (error) {

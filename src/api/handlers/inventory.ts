@@ -1,10 +1,9 @@
+import { Context } from 'api';
+import { InventoryApp, InventoryTransactionApp } from 'app';
 import { NextFunction, Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
-
-import { Context } from 'api';
-import { InventoryApp } from 'app';
-import { IInventoryFilter } from 'interface';
-import { AppError, Inventory } from 'model';
+import { EInventoryTransactionType, IInventoryFilter } from 'interface';
+import { AppError, Inventory, InventoryTransaction } from 'model';
 import { isValidId, tryParseJson, validatePagination } from 'utils';
 
 const where = 'Handlers.inventory';
@@ -137,6 +136,70 @@ export async function updateInventory(
     const data = await Inventory.sequelize(req.body);
 
     const result = await new InventoryApp(ctx).update(id, data);
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateInventoryQuantity(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const userId = req.user?._id;
+    const id = req.params.id as string;
+    const { damagedQuantity, reason } = req.body;
+
+    if (!isValidId(id)) {
+      throw new AppError({
+        id: `${where}.updateInventoryQuantity`,
+        message: 'id không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    const oldInventory = await new InventoryApp(ctx).getById(id);
+
+    if (!oldInventory) {
+      throw new AppError({
+        id: `${where}.updateInventoryQuantity`,
+        message: 'Không tim thấy sản phẩm trong kho',
+        statusCode: StatusCodes.NOT_FOUND,
+      });
+    }
+
+    if (
+      oldInventory?.quantity > 0 &&
+      oldInventory?.quantity < damagedQuantity &&
+      typeof damagedQuantity !== 'number'
+    ) {
+      throw new AppError({
+        id: `${where}.updateInventoryQuantity`,
+        message: 'Số lượng sản phẩm không đủ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    const data = await Inventory.sequelize({
+      ...oldInventory,
+      quantity: Number(oldInventory?.quantity || 0) - Number(damagedQuantity || 0),
+    });
+
+    const result = await new InventoryApp(ctx).update(id, data);
+
+    await new InventoryTransactionApp(ctx).create(
+      new InventoryTransaction({
+        productId: data?.productId,
+        type: EInventoryTransactionType.EXPORT,
+        price: 0,
+        note: `Người dùng ${userId} đã cập nhật số lượng "${reason}"`,
+        quantity: Number(damagedQuantity || 0),
+      }),
+    );
 
     res.json(result);
   } catch (error) {

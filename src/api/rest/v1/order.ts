@@ -78,17 +78,6 @@ export function initOrder(api: API) {
     api.handler(handlers.getPagination),
   );
   api.baseRoutes.order.get('/:id', api.handler(authentication()), api.handler(handlers.getDetail));
-  api.baseRoutes.order.post(
-    '/create',
-    api.handler(authentication()),
-    api.handler(
-      authorization({
-        role: ERole.ADMIN,
-        permissions: [EPermission.WRITE_ORDER],
-      }),
-    ),
-    api.handler(handlers.createOrder),
-  );
   api.baseRoutes.order.put(
     '/:id',
     api.handler(authentication()),
@@ -121,6 +110,18 @@ export function initOrder(api: API) {
       }),
     ),
     api.handler(handlers.updateStatusOrder),
+  );
+
+  api.baseRoutes.order.patch(
+    '/pay-debt',
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+        permissions: [EPermission.WRITE_ORDER],
+      }),
+    ),
+    api.handler(handlers.payDebtForOrders),
   );
 
   api.baseRoutes.order.put(

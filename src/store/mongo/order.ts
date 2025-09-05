@@ -32,6 +32,7 @@ export class MongoOrder extends BaseStore<IOrder> {
       paymentMethod: 1,
       createdAt: 1,
       updatedAt: 1,
+      unpaidAmount: 1,
       ...custom,
     };
   }
@@ -95,8 +96,6 @@ export class MongoOrder extends BaseStore<IOrder> {
     const result = await this.collection
       .aggregate<{ data: IOrder[]; pageInfo: Array<{ count: number }> }>([
         { $match: condition },
-        { $sort: sort },
-
         {
           $lookup: {
             from: 'users',
@@ -141,7 +140,6 @@ export class MongoOrder extends BaseStore<IOrder> {
             'items.product': 0,
           },
         },
-
         {
           $group: {
             _id: '$_id',
@@ -149,6 +147,7 @@ export class MongoOrder extends BaseStore<IOrder> {
             userId: { $first: '$userId' },
             status: { $first: '$status' },
             total: { $first: '$total' },
+            unpaidAmount: { $push: '$unpaidAmount' },
             shippingAddress: { $first: '$shippingAddress' },
             paymentMethod: { $first: '$paymentMethod' },
             note: { $first: '$note' },
@@ -158,7 +157,7 @@ export class MongoOrder extends BaseStore<IOrder> {
             items: { $push: '$items' },
           },
         },
-
+        { $sort: sort },
         // Tách pagination
         {
           $facet: {
@@ -275,6 +274,7 @@ export class MongoOrder extends BaseStore<IOrder> {
             userId: { $first: '$userId' },
             status: { $first: '$status' },
             total: { $first: '$total' },
+            unpaidAmount: { $first: '$unpaidAmount' },
             shippingAddress: { $first: '$shippingAddress' },
             paymentMethod: { $first: '$paymentMethod' },
             note: { $first: '$note' },

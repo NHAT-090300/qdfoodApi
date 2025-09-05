@@ -138,11 +138,8 @@ export default class MongoStore {
     }
   };
 
-  startSession = () => {
-    const session = this.client.startSession();
-    session.startTransaction();
-
-    return session;
+  startSession = (): ClientSession => {
+    return this.client.startSession();
   };
 
   endSession = async (session: ClientSession) => {

@@ -27,7 +27,7 @@ export class Inventory implements IInventory {
   static async sequelize(data: any) {
     const schema = yup.object().shape({
       productId: yup.string().objectId().required(),
-      supplierId: yup.string().objectId().required(),
+      // supplierId: yup.string().objectId(),
       quantity: yup.number().default(0),
     });
 

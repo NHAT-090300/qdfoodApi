@@ -79,4 +79,15 @@ export function initInventory(api: API) {
     ),
     api.handler(handlers.updateInventory),
   );
+  api.baseRoutes.inventory.put(
+    '/quantity/:id',
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+        permissions: [EPermission.WRITE_INVENTORY],
+      }),
+    ),
+    api.handler(handlers.updateInventoryQuantity),
+  );
 }

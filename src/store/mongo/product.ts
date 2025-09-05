@@ -626,6 +626,55 @@ export class MongoProduct extends BaseStore<IProduct> {
       .toArray();
   }
 
+  async getListByUser(filters: IProductFilter) {
+    const { condition, sort } = this.getQuery(filters);
+
+    const pipeline: any[] = [
+      { $match: condition },
+      { $sort: sort },
+      {
+        $lookup: {
+          from: 'product_prices',
+          let: { productId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$productId', '$$productId'] },
+                    { $eq: ['$userId', new ObjectId(filters.userId)] },
+                  ],
+                },
+              },
+            },
+            { $limit: 1 },
+          ],
+          as: 'customPriceData',
+        },
+      },
+      {
+        $addFields: {
+          finalPrice: {
+            $cond: [
+              { $gt: [{ $size: '$customPriceData' }, 0] },
+              { $arrayElemAt: ['$customPriceData.customPrice', 0] },
+              '$defaultPrice',
+            ],
+          },
+        },
+      },
+      {
+        $project: {
+          ...this.getProject(),
+          category: 0,
+          finalPrice: 1,
+        },
+      },
+    ];
+
+    return this.collection.aggregate(pipeline).toArray();
+  }
+
   async getList(filters: IProductFilter) {
     const { condition } = this.getQuery(filters);
     return this.collection.find<IProduct>(condition, { projection: this.getProject() }).toArray();

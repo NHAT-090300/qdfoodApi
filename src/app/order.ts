@@ -226,7 +226,7 @@ export class OrderApp extends BaseApp {
       status: EOrderStatus;
       reason?: string;
       paymentVerifierId?: string;
-      unpaidAmount?: number;
+      paymentAmount?: number;
     },
   ) {
     try {
@@ -234,7 +234,7 @@ export class OrderApp extends BaseApp {
 
       if (!order) {
         throw new AppError({
-          id: `${where}.string`,
+          id: `${where}.updateStatus`,
           message: 'Dữ liệu không tồn tại trong hệ thống',
           statusCode: StatusCodes.BAD_REQUEST,
         });
@@ -258,15 +258,40 @@ export class OrderApp extends BaseApp {
         }
       }
 
+      if (Number(data?.paymentAmount) > Number(order?.unpaidAmount)) {
+        throw new AppError({
+          id: `${where}.updateStatus`,
+          message: 'Dữ liệu không tồn tại trong hệ thống',
+          statusCode: StatusCodes.BAD_REQUEST,
+        });
+      }
+
       const updateData: any = {
         ...data,
-        ...(data.paymentVerifierId && {
-          paymentVerifierId: new ObjectId(data.paymentVerifierId),
-        }),
-        ...(data.unpaidAmount && {
-          unpaidAmount: Number(data?.unpaidAmount),
-        }),
+        unpaidAmount: 0,
       };
+
+      if (data?.status === EOrderStatus.COMPLETED) {
+        updateData.unpaidAmount = order?.total;
+      }
+
+      if (
+        data?.status === EOrderStatus.PAID ||
+        (data?.paymentAmount &&
+          Number(order?.unpaidAmount || 0) === Number(data?.paymentAmount || 0))
+      ) {
+        updateData.status = EOrderStatus.PAID;
+        updateData.unpaidAmount = 0;
+        updateData.paymentVerifierId = new ObjectId(data.paymentVerifierId);
+      }
+
+      if (data?.status === EOrderStatus.DEBT) {
+        updateData.unpaidAmount =
+          Number(order?.unpaidAmount || 0) - Number(data?.paymentAmount || 0);
+        updateData.paymentVerifierId = new ObjectId(data.paymentVerifierId);
+      }
+
+      delete updateData.paymentAmount;
 
       await this.getStore()
         .order()
@@ -277,6 +302,67 @@ export class OrderApp extends BaseApp {
       throw new AppError({
         id: `${where}.updateStatus`,
         message: 'Cập nhật order thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+
+  async payDebtForOrders(
+    userId: string,
+    paymentAmount: number,
+    paymentVerifierId: string,
+  ): Promise<{ success: boolean; remainingAmount: number }> {
+    try {
+      let remainingAmount = Number(paymentAmount);
+
+      // Lấy danh sách đơn theo thứ tự cũ → mới (ví dụ theo createdAt tăng dần)
+      const orders = await this.getStore()
+        .order()
+        .find<any>({
+          userId: new ObjectId(userId),
+          unpaidAmount: { $gt: 0 },
+        });
+
+      for (const order of orders) {
+        if (remainingAmount <= 0) break;
+
+        const unpaid = Number(order.unpaidAmount || 0);
+        let newUnpaid = unpaid;
+        let newStatus = order.status;
+
+        if (remainingAmount >= unpaid) {
+          // Trả hết đơn này
+          remainingAmount -= unpaid;
+          newUnpaid = 0;
+          newStatus = EOrderStatus.PAID;
+        } else {
+          // Trả một phần
+          newUnpaid = unpaid - remainingAmount;
+          remainingAmount = 0;
+          newStatus = EOrderStatus.DEBT;
+        }
+
+        await this.getStore()
+          .order()
+          .baseUpdate(
+            { _id: order._id },
+            {
+              $set: {
+                unpaidAmount: newUnpaid,
+                status: newStatus,
+                paymentVerifierId: new ObjectId(paymentVerifierId),
+                updatedAt: new Date(),
+              },
+            },
+          );
+      }
+
+      return { success: true, remainingAmount };
+    } catch (error: any) {
+      throw new AppError({
+        id: 'order.payDebtForOrders',
+        message: 'Thanh toán công nợ thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         detail: error,
       });

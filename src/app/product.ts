@@ -95,6 +95,22 @@ export class ProductApp extends BaseApp {
     }
   }
 
+  async getListByUser(filters: IProductFilter) {
+    try {
+      return await this.getStore().product().getListByUser(filters);
+    } catch (error: any) {
+      const isAppError = error instanceof AppError;
+      if (isAppError) throw error;
+
+      throw new AppError({
+        id: `${where}.getList`,
+        message: 'Lấy danh sách product thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error?.message || error,
+      });
+    }
+  }
+
   async getList(filters: IProductFilter) {
     try {
       return await this.getStore().product().getList(filters);
