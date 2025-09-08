@@ -670,29 +670,87 @@ export class OrderApp extends BaseApp {
 
   async exportOrderDetailsToExcel(orderId: string) {
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Chi tiết đơn hàng');
+    const worksheet = workbook.addWorksheet('PHIẾU XUẤT KHO');
 
-    // Thêm tiêu đề phiếu
-    worksheet.mergeCells('A1:E1');
-    worksheet.getCell('A1').value = 'PHIẾU GIAO HÀNG';
-    worksheet.getCell('A1').font = { bold: true, size: 16 };
-    worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
+    // Helper style
+    function styleCell(
+      cell: ExcelJS.Cell,
+      opts: { bold?: boolean; size?: number; align?: 'left' | 'center' | 'right' } = {},
+    ) {
+      cell.font = {
+        name: 'Times New Roman',
+        size: opts.size ?? 13,
+        bold: opts.bold ?? false,
+      };
+      cell.alignment = {
+        horizontal: opts.align ?? 'left',
+        vertical: 'middle',
+      };
+    }
 
-    worksheet.mergeCells('A2:E2');
-    worksheet.getCell('A2').value = 'CÔNG TY TNHH THỰC PHẨM QUẢNG ĐÀ';
-    worksheet.getCell('A2').font = { italic: true, size: 12 };
-    worksheet.getCell('A2').alignment = { horizontal: 'center' };
+    // Lấy order từ DB
+    const order = await this.getStore().order().getOne(orderId);
+    if (!order) throw new Error('Order not found');
 
-    worksheet.mergeCells('A3:E3');
-    worksheet.getCell('A3').value = `Ngày lập: ${new Date().toLocaleDateString('vi-VN')}`;
-    worksheet.getCell('A3').alignment = { horizontal: 'center' };
+    // Company Info
+    worksheet.mergeCells('A1:G1');
+    worksheet.getCell('A1').value = 'CÔNG TY TNHH QUẢNG ĐÀ FOOD';
+    styleCell(worksheet.getCell('A1'), { bold: true, size: 13, align: 'left' });
 
-    // Header bảng
-    worksheet.addRow(['Tên hàng', 'Mã sản phẩm', 'Số lượng', 'Đơn giá', 'Thành tiền']);
+    worksheet.mergeCells('A2:G2');
+    worksheet.getCell('A2').value = 'VPĐH: 116-118 Đô Đốc Lộc, Hòa Xuân, Cẩm Lệ, Đà Nẵng.';
+    styleCell(worksheet.getCell('A2'), { size: 13, align: 'left' });
 
-    worksheet.getRow(4).eachCell((cell) => {
-      cell.font = { bold: true, size: 12 };
-      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    // Title
+    worksheet.mergeCells('A4:G4');
+    worksheet.getCell('A4').value = 'PHIẾU XUẤT KHO';
+    styleCell(worksheet.getCell('A4'), { bold: true, size: 15, align: 'center' });
+
+    // Ngày & Mã phiếu
+    worksheet.mergeCells('A5:E5');
+    worksheet.getCell('A5').value =
+      `Ngày ${new Date().getDate()} Tháng ${new Date().getMonth() + 1} Năm ${new Date().getFullYear()}`;
+    styleCell(worksheet.getCell('A5'), { size: 13, align: 'center' });
+
+    worksheet.mergeCells('F5:G5');
+    worksheet.getCell('F5').value = `PXK: ${orderId}`;
+    styleCell(worksheet.getCell('F5'), { bold: true, size: 13, align: 'right' });
+
+    // Thông tin nhận hàng
+    worksheet.mergeCells('A7:B7');
+    worksheet.getCell('A7').value = 'Người nhận hàng';
+    styleCell(worksheet.getCell('A7'), { bold: true });
+
+    worksheet.mergeCells('A8:B8');
+    worksheet.getCell('A8').value = 'Đơn vị nhận hàng';
+    styleCell(worksheet.getCell('A8'), { bold: true });
+    worksheet.getCell('C8').value = order?.user?.name ?? '';
+    styleCell(worksheet.getCell('C8'));
+
+    worksheet.mergeCells('A9:B9');
+    worksheet.getCell('A9').value = 'Nội dung:';
+    styleCell(worksheet.getCell('A9'), { bold: true });
+    worksheet.getCell('C9').value = order.note ?? '';
+    styleCell(worksheet.getCell('C9'));
+
+    worksheet.mergeCells('A10:B10');
+    worksheet.getCell('A10').value = 'Thời gian giao:';
+    styleCell(worksheet.getCell('A10'), { bold: true });
+    worksheet.getCell('C10').value = '';
+    styleCell(worksheet.getCell('C10'));
+
+    worksheet.mergeCells('A11:B11');
+    worksheet.getCell('A11').value = 'Thời gian thực giao:';
+    styleCell(worksheet.getCell('A11'), { bold: true });
+    worksheet.getCell('C11').value = '';
+    styleCell(worksheet.getCell('C11'));
+    styleCell(worksheet.getCell('C12'));
+
+    // Table Header
+    const header = ['STT', 'MÃ HH', 'Tên hàng', 'ĐVT', 'SL', 'Đơn giá', 'Thành tiền'];
+    const headerRow = worksheet.addRow(header);
+    headerRow.eachCell((cell) => {
+      styleCell(cell, { bold: true, size: 14, align: 'center' });
       cell.border = {
         top: { style: 'thin' },
         left: { style: 'thin' },
@@ -701,19 +759,31 @@ export class OrderApp extends BaseApp {
       };
     });
 
-    const order = await this.getStore().order().getOne(orderId);
+    // Items
+    let totalQty = 0;
+    let totalMoney = 0;
+    order.items?.forEach((item: any, index: number) => {
+      const quantity = Number(item.quantity) - Number(item.damagedQuantity) || 0;
+      const price = Number(item?.price) || 0;
+      const lineTotal = quantity * price;
+      totalQty += quantity;
+      totalMoney += lineTotal;
 
-    // Add item rows
-    order?.items?.forEach((item: any) => {
-      const quantity = Number(item.quantity) || 0;
-      const unitName = Number(item.unitName) || 0;
-      const total = quantity * unitName;
+      const row = worksheet.addRow([
+        index + 1,
+        item.code ?? '-',
+        item.name ?? 'Không có tên',
+        item.unitName ?? '-',
+        quantity,
+        price?.toLocaleString('vi-VN'),
+        lineTotal?.toLocaleString('vi-VN'),
+      ]);
 
-      const row = [item.name ?? 'Không có tên', item.code ?? '---', quantity, unitName, total];
-      const rowRef = worksheet.addRow(row);
+      row.eachCell((cell, colNumber) => {
+        if (colNumber === 3) styleCell(cell, { size: 14, align: 'left' });
+        else if (colNumber === 6 || colNumber === 7) styleCell(cell, { size: 14, align: 'right' });
+        else styleCell(cell, { size: 14, align: 'center' });
 
-      rowRef.eachCell((cell) => {
-        cell.alignment = { vertical: 'middle', horizontal: 'center' };
         cell.border = {
           top: { style: 'thin' },
           left: { style: 'thin' },
@@ -723,37 +793,74 @@ export class OrderApp extends BaseApp {
       });
     });
 
-    worksheet.columns.forEach((column) => {
-      column.width = 20;
+    // Summary
+    worksheet.addRow([]);
+    worksheet.addRow(['', '', '', 'Tổng số lượng', '', totalQty, '']);
+    worksheet.addRow(['', '', '', 'Tổng tiền hàng', '', totalMoney?.toLocaleString('vi-VN'), '']);
+    worksheet.addRow(['', '', '', 'Thuế GTGT 8%', '', '', '']);
+    worksheet.addRow(['', '', '', 'Tổng cộng', '', totalMoney?.toLocaleString('vi-VN'), '']);
+
+    const startRow = worksheet.lastRow!.number - 3;
+    const endRow = worksheet.lastRow!.number;
+
+    for (let rowIndex = startRow; rowIndex <= endRow; rowIndex++) {
+      // Merge D-E cho từng dòng
+      worksheet.mergeCells(`D${rowIndex}:E${rowIndex}`);
+
+      // Style cho tiêu đề (cột D-E)
+      styleCell(worksheet.getCell(`D${rowIndex}`), { size: 13, align: 'center', bold: true });
+
+      worksheet.getRow(rowIndex).eachCell((cell, colNumber) => {
+        styleCell(
+          cell,
+          colNumber <= 5 ? { size: 13, align: 'left' } : { size: 13, align: 'right' },
+        );
+      });
+    }
+
+    worksheet.addRow([]);
+    worksheet.addRow([]);
+    const sigRow = worksheet.addRow([
+      'Người lập phiếu',
+      '',
+      'Người giao hàng',
+      'Bảo vệ',
+      '',
+      'Phụ trách bếp',
+      'Giám đốc cơ sở',
+    ]);
+
+    // Merge A-B cho "Người lập phiếu"
+    worksheet.mergeCells(`A${sigRow.number}:B${sigRow.number}`);
+    worksheet.mergeCells(`D${sigRow.number}:E${sigRow.number}`);
+    styleCell(worksheet.getCell(`A${sigRow.number}`), { size: 13, align: 'center', bold: true });
+    sigRow.eachCell((cell, colNumber) => {
+      if (colNumber > 2) styleCell(cell, { size: 13, align: 'center', bold: true });
     });
 
-    // Lấy số dòng cuối cùng sau khi thêm dữ liệu
-    const lastRowNum = worksheet.lastRow?.number || 0;
-    worksheet.addRow([]); // dòng trống
+    const sigNote = worksheet.addRow([
+      '(Kí và ghi rõ tên)',
+      '',
+      '(Kí và ghi rõ tên)',
+      '(Kí và ghi rõ tên)',
+      '',
+      '(Kí và ghi rõ tên)',
+      '(Kí và ghi rõ tên)',
+    ]);
 
-    // Chèn chữ ký nằm hai bên của bảng, sát dưới bảng
-    const signRowNum = lastRowNum + 2;
+    // Merge A-B cho ghi chú "Người lập phiếu"
+    worksheet.mergeCells(`A${sigNote.number}:B${sigNote.number}`);
+    worksheet.mergeCells(`D${sigNote.number}:E${sigNote.number}`);
+    styleCell(worksheet.getCell(`A${sigNote.number}`), { size: 13, align: 'center' });
+    sigNote.eachCell((cell, colNumber) => {
+      if (colNumber > 2) styleCell(cell, { size: 13, align: 'center' });
+    });
 
-    // Người giao hàng (bên trái)
-    worksheet.mergeCells(`A${signRowNum}:B${signRowNum}`);
-    worksheet.getCell(`A${signRowNum}`).value = 'Người giao hàng';
-    worksheet.getCell(`A${signRowNum}`).alignment = { horizontal: 'center' };
-
-    // Người nhận hàng (bên phải)
-    worksheet.mergeCells(`D${signRowNum}:E${signRowNum}`);
-    worksheet.getCell(`D${signRowNum}`).value = 'Người nhận hàng';
-    worksheet.getCell(`D${signRowNum}`).alignment = { horizontal: 'center' };
-
-    // Dòng ghi chú ký tên
-    worksheet.mergeCells(`A${signRowNum + 1}:B${signRowNum + 1}`);
-    worksheet.getCell(`A${signRowNum + 1}`).value = '(ký, và ghi rõ họ tên)';
-    worksheet.getCell(`A${signRowNum + 1}`).font = { italic: true };
-    worksheet.getCell(`A${signRowNum + 1}`).alignment = { horizontal: 'center' };
-
-    worksheet.mergeCells(`D${signRowNum + 1}:E${signRowNum + 1}`);
-    worksheet.getCell(`D${signRowNum + 1}`).value = '(ký, và ghi rõ họ tên)';
-    worksheet.getCell(`D${signRowNum + 1}`).font = { italic: true };
-    worksheet.getCell(`D${signRowNum + 1}`).alignment = { horizontal: 'center' };
+    // Column widths
+    worksheet.getColumn(2).width = 20; // tên hàng rộng gấp 3
+    worksheet.getColumn(3).width = 30; // tên hàng rộng gấp 3
+    worksheet.getColumn(6).width = 20; // đơn giá rộng gấp 2
+    worksheet.getColumn(7).width = 20; // thành tiền rộng gấp 2
 
     return workbook;
   }

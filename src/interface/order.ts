@@ -6,6 +6,7 @@ import { IProduct } from './product';
 export interface IOrder {
   _id?: ObjectId;
   userId: ObjectId;
+  user?: IUser;
   status: EOrderStatus;
   total: number;
   shippingAddress: IOrderShippingAddress;

@@ -363,7 +363,7 @@ export class MongoOrder extends BaseStore<IOrder> {
       ])
       .next();
 
-    return result;
+    return result as IOrder;
   }
 
   async createOne(data: Order, session?: ClientSession) {
