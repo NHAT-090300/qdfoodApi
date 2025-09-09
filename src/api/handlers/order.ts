@@ -455,7 +455,7 @@ export async function exportOrders(
       sort,
     };
 
-    const workbook = await new OrderApp(ctx).exportOrders(filters);
+    const workbook = await new OrderApp(ctx).exportOrdersToExcel(filters);
 
     res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
     res.setHeader(

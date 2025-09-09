@@ -369,45 +369,88 @@ export class OrderApp extends BaseApp {
     }
   }
 
-  async exportOrders(filters: IOrderFilter) {
-    try {
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('orders');
+  async exportOrdersToExcel(filters: any) {
+    const workbook = new ExcelJS.Workbook();
+    const orders = await this.getStore().order().getList(filters);
+
+    // Helper style
+    function styleCell(
+      cell: ExcelJS.Cell,
+      opts: { bold?: boolean; size?: number; align?: 'left' | 'center' | 'right' } = {},
+    ) {
+      cell.font = {
+        name: 'Times New Roman',
+        size: opts.size ?? 13,
+        bold: opts.bold ?? false,
+      };
+      cell.alignment = {
+        horizontal: opts.align ?? 'left',
+        vertical: 'middle',
+      };
+    }
+
+    for (const [i, order] of orders.entries()) {
+      const sheetName = `PXK_${i + 1}`;
+      const worksheet = workbook.addWorksheet(sheetName);
+
+      // Company Info
+      worksheet.mergeCells('A1:G1');
+      worksheet.getCell('A1').value = 'CÔNG TY TNHH QUẢNG ĐÀ FOOD';
+      styleCell(worksheet.getCell('A1'), { bold: true, size: 13, align: 'left' });
+
+      worksheet.mergeCells('A2:G2');
+      worksheet.getCell('A2').value = 'VPĐH: 116-118 Đô Đốc Lộc, Hòa Xuân, Cẩm Lệ, Đà Nẵng.';
+      styleCell(worksheet.getCell('A2'), { size: 13, align: 'left' });
 
       // Title
-      worksheet.mergeCells('A1:L1');
-      worksheet.getCell('A1').value = 'THỐNG KÊ ĐƠN HÀNG';
-      worksheet.getCell('A1').font = { bold: true, size: 16 };
-      worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
+      worksheet.mergeCells('A4:G4');
+      worksheet.getCell('A4').value = 'PHIẾU XUẤT KHO';
+      styleCell(worksheet.getCell('A4'), { bold: true, size: 15, align: 'center' });
 
-      worksheet.mergeCells('A2:L2');
-      worksheet.getCell('A2').value = 'CÔNG TY TNHH THỰC PHẨM QUẢNG ĐÀ';
-      worksheet.getCell('A2').font = { italic: true, size: 12 };
-      worksheet.getCell('A2').alignment = { horizontal: 'center' };
+      // Ngày & Mã phiếu
+      worksheet.mergeCells('A5:E5');
+      worksheet.getCell('A5').value =
+        `Ngày ${new Date().getDate()} Tháng ${new Date().getMonth() + 1} Năm ${new Date().getFullYear()}`;
+      styleCell(worksheet.getCell('A5'), { size: 13, align: 'center' });
 
-      worksheet.mergeCells('A3:L3');
-      worksheet.getCell('A3').value = `Ngày lập: ${new Date().toLocaleDateString('vi-VN')}`;
-      worksheet.getCell('A3').alignment = { horizontal: 'center' };
+      worksheet.mergeCells('F5:G5');
+      worksheet.getCell('F5').value = `PXK: ${order._id}`;
+      styleCell(worksheet.getCell('F5'), { bold: true, size: 13, align: 'right' });
 
-      // Header row (row 4)
-      const headerRow = worksheet.addRow([
-        'Mã Đơn Hàng',
-        'Tên Khách Hàng',
-        'Email',
-        'Số điện thoại',
-        'Địa chỉ',
-        'Mã Sản Phẩm',
-        'Tên Sản Phẩm',
-        'Số Lượng',
-        'Giá bán',
-        'Thành tiền',
-        'Tổng Tiền',
-        'Trạng Thái',
-      ]);
+      // Thông tin nhận hàng
+      worksheet.mergeCells('A7:B7');
+      worksheet.getCell('A7').value = 'Người nhận hàng';
+      styleCell(worksheet.getCell('A7'), { bold: true });
 
+      worksheet.mergeCells('A8:B8');
+      worksheet.getCell('A8').value = 'Đơn vị nhận hàng';
+      styleCell(worksheet.getCell('A8'), { bold: true });
+      worksheet.getCell('C8').value = order?.user?.name ?? '';
+      styleCell(worksheet.getCell('C8'));
+
+      worksheet.mergeCells('A9:B9');
+      worksheet.getCell('A9').value = 'Nội dung:';
+      styleCell(worksheet.getCell('A9'), { bold: true });
+      worksheet.getCell('C9').value = order.note ?? '';
+      styleCell(worksheet.getCell('C9'));
+
+      worksheet.mergeCells('A10:B10');
+      worksheet.getCell('A10').value = 'Thời gian giao:';
+      styleCell(worksheet.getCell('A10'), { bold: true });
+      worksheet.getCell('C10').value = '';
+      styleCell(worksheet.getCell('C10'));
+
+      worksheet.mergeCells('A11:B11');
+      worksheet.getCell('A11').value = 'Thời gian thực giao:';
+      styleCell(worksheet.getCell('A11'), { bold: true });
+      worksheet.getCell('C11').value = '';
+      styleCell(worksheet.getCell('C11'));
+
+      // Table Header
+      const header = ['STT', 'MÃ HH', 'Tên hàng', 'ĐVT', 'SL', 'Đơn giá', 'Thành tiền'];
+      const headerRow = worksheet.addRow(header);
       headerRow.eachCell((cell) => {
-        cell.font = { bold: true, size: 12 };
-        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        styleCell(cell, { bold: true, size: 14, align: 'center' });
         cell.border = {
           top: { style: 'thin' },
           left: { style: 'thin' },
@@ -416,87 +459,108 @@ export class OrderApp extends BaseApp {
         };
       });
 
-      const orders = await this.getStore().order().getList(filters);
+      // Items
+      let totalQty = 0;
+      let totalMoney = 0;
+      order.items?.forEach((item: any, index: number) => {
+        const quantity = Number(item.quantity) - Number(item.damagedQuantity) || 0;
+        const price = Number(item?.price) || 0;
+        const lineTotal = quantity * price;
+        totalQty += quantity;
+        totalMoney += lineTotal;
 
-      orders.forEach((order) => {
-        const address = getOrderAddress(order.shippingAddress);
-        const statusLabel = findOrderWithStatus(order.status)?.label || order.status;
-        const customerName = order.user?.name || '';
-        const customerEmail = order.user?.email || '';
-        const customerPhone = order.user?.phoneNumber || '';
-        const totalOrderAmount = formatCurrency(order.total || 0);
+        const row = worksheet.addRow([
+          index + 1,
+          item.code ?? '-',
+          item.name ?? 'Không có tên',
+          item.unitName ?? '-',
+          quantity,
+          price?.toLocaleString('vi-VN'),
+          lineTotal?.toLocaleString('vi-VN'),
+        ]);
 
-        if (Array.isArray(order.items)) {
-          order.items.forEach((item) => {
-            const row = [
-              order._id?.toString(),
-              customerName,
-              customerEmail,
-              customerPhone,
-              address,
-              item.code || '---',
-              item.name || '',
-              item.quantity,
-              formatCurrency(Number(item.price)),
-              formatCurrency(Number(item.price * item.quantity)),
-              totalOrderAmount,
-              statusLabel,
-            ];
+        row.eachCell((cell, colNumber) => {
+          if (colNumber === 3) styleCell(cell, { size: 14, align: 'left' });
+          else if (colNumber === 6 || colNumber === 7)
+            styleCell(cell, { size: 14, align: 'right' });
+          else styleCell(cell, { size: 14, align: 'center' });
 
-            const rowRef = worksheet.addRow(row);
-
-            rowRef.eachCell((cell) => {
-              cell.border = {
-                top: { style: 'thin' },
-                left: { style: 'thin' },
-                bottom: { style: 'thin' },
-                right: { style: 'thin' },
-              };
-            });
-          });
-        } else {
-          console.warn('order.items không phải là array:', order.items);
-        }
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' },
+          };
+        });
       });
 
-      // Tính lại dòng cuối cùng sau khi add toàn bộ dữ liệu
-      const lastRowNumber = worksheet.lastRow?.number || 0;
+      // Summary
+      worksheet.addRow([]);
+      worksheet.addRow(['', '', '', 'Tổng số lượng', '', totalQty, '']);
+      worksheet.addRow(['', '', '', 'Tổng tiền hàng', '', totalMoney?.toLocaleString('vi-VN'), '']);
+      worksheet.addRow(['', '', '', 'Thuế GTGT 8%', '', '', '']);
+      worksheet.addRow(['', '', '', 'Tổng cộng', '', totalMoney?.toLocaleString('vi-VN'), '']);
 
-      worksheet.addRow([]); // Dòng trống
-      worksheet.mergeCells(`A${lastRowNumber + 2}:C${lastRowNumber + 2}`);
-      worksheet.getCell(`A${lastRowNumber + 2}`).value = 'Người giao hàng';
-      worksheet.getCell(`A${lastRowNumber + 2}`).alignment = { horizontal: 'center' };
+      const startRow = worksheet.lastRow!.number - 3;
+      const endRow = worksheet.lastRow!.number;
 
-      worksheet.mergeCells(`J${lastRowNumber + 2}:L${lastRowNumber + 2}`);
-      worksheet.getCell(`J${lastRowNumber + 2}`).value = 'Người nhận hàng';
-      worksheet.getCell(`J${lastRowNumber + 2}`).alignment = { horizontal: 'center' };
+      for (let rowIndex = startRow; rowIndex <= endRow; rowIndex++) {
+        worksheet.mergeCells(`D${rowIndex}:E${rowIndex}`);
+        styleCell(worksheet.getCell(`D${rowIndex}`), { size: 13, align: 'center', bold: true });
+        worksheet.getRow(rowIndex).eachCell((cell, colNumber) => {
+          styleCell(
+            cell,
+            colNumber <= 5 ? { size: 13, align: 'left' } : { size: 13, align: 'right' },
+          );
+        });
+      }
 
-      worksheet.mergeCells(`A${lastRowNumber + 3}:C${lastRowNumber + 3}`);
-      worksheet.getCell(`A${lastRowNumber + 3}`).value = '(ký, và ghi rõ họ tên)';
-      worksheet.getCell(`A${lastRowNumber + 3}`).font = { italic: true };
-      worksheet.getCell(`A${lastRowNumber + 3}`).alignment = { horizontal: 'center' };
+      worksheet.addRow([]);
+      worksheet.addRow([]);
+      const sigRow = worksheet.addRow([
+        'Người lập phiếu',
+        '',
+        'Người giao hàng',
+        'Bảo vệ',
+        '',
+        'Phụ trách bếp',
+        'Giám đốc cơ sở',
+      ]);
 
-      worksheet.mergeCells(`J${lastRowNumber + 3}:L${lastRowNumber + 3}`);
-      worksheet.getCell(`J${lastRowNumber + 3}`).value = '(ký, và ghi rõ họ tên)';
-      worksheet.getCell(`J${lastRowNumber + 3}`).font = { italic: true };
-      worksheet.getCell(`J${lastRowNumber + 3}`).alignment = { horizontal: 'center' };
-
-      worksheet.columns.forEach((column) => {
-        column.width = 25;
+      worksheet.mergeCells(`A${sigRow.number}:B${sigRow.number}`);
+      worksheet.mergeCells(`D${sigRow.number}:E${sigRow.number}`);
+      styleCell(worksheet.getCell(`A${sigRow.number}`), { size: 13, align: 'center', bold: true });
+      sigRow.eachCell((cell, colNumber) => {
+        if (colNumber > 2) styleCell(cell, { size: 13, align: 'center', bold: true });
       });
 
-      return workbook;
-    } catch (error: any) {
-      if (error instanceof AppError) throw error;
+      const sigNote = worksheet.addRow([
+        '(Kí và ghi rõ tên)',
+        '',
+        '(Kí và ghi rõ tên)',
+        '(Kí và ghi rõ tên)',
+        '',
+        '(Kí và ghi rõ tên)',
+        '(Kí và ghi rõ tên)',
+      ]);
 
-      throw new AppError({
-        id: `order.exportOrders`,
-        message: 'Xuất báo cáo đơn hàng thất bại',
-        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-        detail: error,
+      worksheet.mergeCells(`A${sigNote.number}:B${sigNote.number}`);
+      worksheet.mergeCells(`D${sigNote.number}:E${sigNote.number}`);
+      styleCell(worksheet.getCell(`A${sigNote.number}`), { size: 13, align: 'center' });
+      sigNote.eachCell((cell, colNumber) => {
+        if (colNumber > 2) styleCell(cell, { size: 13, align: 'center' });
       });
+
+      // Column widths
+      worksheet.getColumn(2).width = 20;
+      worksheet.getColumn(3).width = 30;
+      worksheet.getColumn(6).width = 20;
+      worksheet.getColumn(7).width = 20;
     }
+
+    return workbook;
   }
+
   async exportOrdersToPDF(filters: IOrderFilter) {
     const orders = await this.getStore().order().getList(filters);
 
