@@ -107,8 +107,12 @@ export class MongoDocument extends BaseStore<IDocument> {
   }
 
   async getList(filters: IDocumentFilter) {
-    const { condition } = this.getQuery(filters);
-    return this.collection.find<IDocument>(condition, { projection: this.getProject() }).toArray();
+    const { condition, sort } = this.getQuery(filters);
+
+    return this.collection
+      .find<IDocument>(condition, { projection: this.getProject() })
+      .sort(sort)
+      .toArray();
   }
 
   async getOne(filters: IDocumentFilter) {
