@@ -5,7 +5,7 @@ import { EPermission, ERole } from 'interface';
 
 export function initProductPriceProposal(api: API) {
   api.baseRoutes.productPriceProposal.get(
-    '/web-user',
+    '/:userId/web-user',
     api.handler(authentication()),
     api.handler(handlers.getPaginate),
   );

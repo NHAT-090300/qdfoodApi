@@ -125,7 +125,7 @@ export async function getPaginate(
       userId,
     };
 
-    if (!isValidId(filters?.userId)) {
+    if (!isValidId(userId)) {
       throw new AppError({
         id: `${where}.getPaginate`,
         message: 'userId không hợp lệ',
