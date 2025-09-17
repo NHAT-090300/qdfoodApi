@@ -103,9 +103,12 @@ export async function createOrderUser(
     });
 
     if (products?.length !== items?.length) {
+      const notFoundProducts = items.filter(
+        (item: IOrderItem) => !products?.some((p) => p?._id?.equals(item?.productId)),
+      );
       throw new AppError({
         id: `${where}.createOrderUser`,
-        message: 'Một hoặc nhiều sản phẩm không tồn tại',
+        message: `Sản phẩm ${notFoundProducts?.map((p: IOrderItem) => p?.name || p?.productId)?.join(', ')} không còn đăng bán. Vui lòng chọn lại sản phẩm khác.`,
         statusCode: StatusCodes.BAD_REQUEST,
       });
     }
