@@ -17,6 +17,7 @@ export class MongoInventoryTransaction extends BaseStore<IInventoryTransaction> 
       title: 1,
       url: 1,
       image: 1,
+      supplier: 1,
       createdAt: 1,
       updatedAt: 1,
       ...custom,
@@ -90,8 +91,17 @@ export class MongoInventoryTransaction extends BaseStore<IInventoryTransaction> 
           },
         },
         {
+          $lookup: {
+            from: 'suppliers',
+            localField: 'supplierId',
+            foreignField: '_id',
+            as: 'supplier',
+          },
+        },
+        {
           $addFields: {
             product: { $arrayElemAt: ['$product', 0] },
+            supplier: { $arrayElemAt: ['$supplier', 0] },
           },
         },
         {

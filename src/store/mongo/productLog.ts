@@ -1,7 +1,8 @@
 import { ESortOrder, IProductLog, IProductLogFilter } from 'interface';
-import { escapeRegExp, isNumber } from 'lodash';
+import { isNumber } from 'lodash';
 import { ProductLog } from 'model';
 import { ClientSession, Db, ObjectId } from 'mongodb';
+import { createUnsignedRegex } from 'utils';
 
 import { BaseStore } from './base';
 
@@ -49,7 +50,7 @@ export class MongoProductLog extends BaseStore<IProductLog> {
     };
 
     if (filters.keyword) {
-      const regex = new RegExp(escapeRegExp(filters.keyword), 'i');
+      const regex = createUnsignedRegex(filters.keyword);
       conditionProduct.$or = [
         { 'product.name': { $regex: regex } },
         { 'product.code': { $regex: regex } },

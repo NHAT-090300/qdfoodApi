@@ -1,8 +1,9 @@
-import { escapeRegExp, isNumber } from 'lodash';
-import { ClientSession, Db, ObjectId } from 'mongodb';
-
 import { ESortOrder, ISubCategory, ISubCategoryFilter } from 'interface';
+import { isNumber } from 'lodash';
 import { SubCategory } from 'model';
+import { ClientSession, Db, ObjectId } from 'mongodb';
+import { createUnsignedRegex } from 'utils/function';
+
 import { BaseStore } from './base';
 
 export class MongoSubCategory extends BaseStore<ISubCategory> {
@@ -35,7 +36,7 @@ export class MongoSubCategory extends BaseStore<ISubCategory> {
     };
 
     if (filters.keyword) {
-      const regex = new RegExp(escapeRegExp(filters.keyword), 'i');
+      const regex = createUnsignedRegex(filters.keyword);
       condition.$or = [{ name: { $regex: regex }, description: { $regex: regex } }];
     }
 

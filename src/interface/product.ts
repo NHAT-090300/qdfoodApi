@@ -13,6 +13,7 @@ export interface IProduct {
   type: EProductType;
   suppliers?: ISupplierInfo[];
   isRetailAvailable?: boolean;
+  isShow?: boolean;
   slug?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -82,6 +83,7 @@ export interface IProductFilter {
   ninProduct?: string[];
   type?: EProductType[];
   userId?: string;
+  isShow?: boolean;
   cartItems?: {
     productId: string;
     quantity: number;

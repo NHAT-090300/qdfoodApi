@@ -47,6 +47,7 @@ export async function getMore(
       order,
       sort,
       keyword,
+      isShow: true,
     };
 
     validatePagination(filters.page, filters.limit);
@@ -80,6 +81,7 @@ export async function getProductListByUser(
       order,
       sort,
       keyword,
+      isShow: true,
     };
 
     validatePagination(filters.page, filters.limit);
@@ -115,6 +117,7 @@ export async function getProductListCartByUser(
     const filters: IProductFilter = {
       userId: resUser?.id || null,
       cartItems,
+      isShow: true,
     };
 
     const result = await new ProductApp(ctx).getListCartByUser(filters);

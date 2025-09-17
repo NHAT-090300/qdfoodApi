@@ -1,6 +1,3 @@
-import { escapeRegExp, isArray, isNumber } from 'lodash';
-import { ClientSession, Db, ObjectId } from 'mongodb';
-
 import {
   EOrderStatus,
   ESortOrder,
@@ -10,7 +7,11 @@ import {
   IStockOrder,
   IUser,
 } from 'interface';
+import { isArray, isNumber } from 'lodash';
 import { Order } from 'model';
+import { ClientSession, Db, ObjectId } from 'mongodb';
+import { createUnsignedRegex } from 'utils';
+
 import { BaseStore } from './base';
 
 export class MongoOrder extends BaseStore<IOrder> {
@@ -49,19 +50,37 @@ export class MongoOrder extends BaseStore<IOrder> {
     };
 
     if (filters.keyword) {
-      const regex = new RegExp(escapeRegExp(filters.keyword?.trim()), 'i'); // Create a case-insensitive regex
-      condition.$expr = {
-        $regexMatch: {
-          input: { $toString: '$_id' }, // Convert _id to string
-          regex,
-        },
-      };
+      const regex = createUnsignedRegex(filters.keyword);
+      condition.$or = [
+        { _id: { $regex: regex } },
+        { 'user.name': { $regex: regex } },
+        { 'user.email': { $regex: regex } },
+        { 'user.phoneNumber': { $regex: regex } },
+        { 'items.code': { $regex: regex } },
+        { 'items.name': { $regex: regex } },
+      ];
     }
 
     if (filters?.status?.length && isArray(filters.status)) {
       condition.status = {
         $in: filters.status,
       };
+    }
+
+    if (filters?.date?.length) {
+      const [startDate, endDate] = filters.date;
+      if (startDate) {
+        condition.createdAt = {
+          ...(condition.createdAt || {}),
+          $gte: new Date(startDate),
+        };
+      }
+      if (endDate) {
+        condition.createdAt = {
+          ...(condition.createdAt || {}),
+          $lte: new Date(endDate),
+        };
+      }
     }
 
     if (filters.userId) {
@@ -95,7 +114,6 @@ export class MongoOrder extends BaseStore<IOrder> {
 
     const result = await this.collection
       .aggregate<{ data: IOrder[]; pageInfo: Array<{ count: number }> }>([
-        { $match: condition },
         {
           $lookup: {
             from: 'users',
@@ -158,6 +176,7 @@ export class MongoOrder extends BaseStore<IOrder> {
           },
         },
         { $sort: sort },
+        { $match: condition },
         // Tách pagination
         {
           $facet: {

@@ -1,8 +1,9 @@
-import { escapeRegExp, isNumber } from 'lodash';
-import { ClientSession, Db, ObjectId } from 'mongodb';
-
 import { ESortOrder, IPartner, IPartnerFilter } from 'interface';
+import { isNumber } from 'lodash';
 import { Partner } from 'model';
+import { ClientSession, Db, ObjectId } from 'mongodb';
+import { createUnsignedRegex } from 'utils';
+
 import { BaseStore } from './base';
 
 export class MongoPartner extends BaseStore<IPartner> {
@@ -36,7 +37,7 @@ export class MongoPartner extends BaseStore<IPartner> {
     };
 
     if (filters.keyword) {
-      const regex = new RegExp(escapeRegExp(filters.keyword), 'i');
+      const regex = createUnsignedRegex(filters.keyword);
       condition.$or = [{ name: { $regex: regex } }];
     }
 

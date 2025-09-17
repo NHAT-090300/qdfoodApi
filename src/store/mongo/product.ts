@@ -56,6 +56,7 @@ export class MongoProduct extends BaseStore<IProduct> {
       code: 1,
       type: 1,
       isRetailAvailable: 1,
+      isShow: 1,
       ...custom,
     };
   }
@@ -88,6 +89,10 @@ export class MongoProduct extends BaseStore<IProduct> {
       condition.type = {
         $in: filters.type,
       };
+    }
+
+    if (typeof filters.isShow === 'boolean') {
+      condition.isShow = filters.isShow;
     }
 
     if (filters.ninProduct?.length && Array.isArray(filters?.ninProduct)) {

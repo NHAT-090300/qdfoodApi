@@ -51,6 +51,7 @@ export interface IOrderFilter {
   limit?: number;
   sort?: string;
   order?: ESortOrder;
+  date?: string[];
 }
 
 export interface IOrderWithUser extends IOrder {

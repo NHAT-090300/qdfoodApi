@@ -99,6 +99,7 @@ export async function createOrderUser(
     const products = await new ProductApp(ctx).getListByUser({
       ids: productIds,
       userId,
+      isShow: true,
     });
 
     if (products?.length !== items?.length) {
@@ -116,7 +117,7 @@ export async function createOrderUser(
       if (!product) {
         throw new AppError({
           id: `${where}.createOrderUser`,
-          message: 'Một hoặc nhiều sản phẩm không tồn tại',
+          message: `Sản phẩm ${item.name || item.productId} không tồn tại`,
           statusCode: StatusCodes.BAD_REQUEST,
         });
       }

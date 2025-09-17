@@ -1,8 +1,9 @@
-import { escapeRegExp, isNumber } from 'lodash';
-import { ClientSession, Db, ObjectId } from 'mongodb';
-
 import { ESortOrder, INews, INewsFilter } from 'interface';
+import { isNumber } from 'lodash';
 import { News } from 'model';
+import { ClientSession, Db, ObjectId } from 'mongodb';
+import { createUnsignedRegex } from 'utils';
+
 import { BaseStore } from './base';
 
 export class MongoNews extends BaseStore<INews> {
@@ -38,8 +39,12 @@ export class MongoNews extends BaseStore<INews> {
     };
 
     if (filters.keyword) {
-      const regex = new RegExp(escapeRegExp(filters.keyword), 'i');
-      condition.$or = [{ name: { $regex: regex } }];
+      const regex = createUnsignedRegex(filters.keyword);
+      condition.$or = [
+        { _id: { $regex: regex } },
+        { name: { $regex: regex } },
+        { description: { $regex: regex } },
+      ];
     }
 
     if (Array.isArray(filters.ids) && filters.ids.length) {

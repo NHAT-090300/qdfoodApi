@@ -1,8 +1,9 @@
-import { escapeRegExp, isNumber } from 'lodash';
-import { ClientSession, Db, ObjectId } from 'mongodb';
-
 import { ESortOrder, ISupplier, ISupplierFilter } from 'interface';
+import { isNumber } from 'lodash';
 import { Supplier } from 'model';
+import { ClientSession, Db, ObjectId } from 'mongodb';
+import { createUnsignedRegex } from 'utils';
+
 import { BaseStore } from './base';
 
 export class MongoSupplier extends BaseStore<ISupplier> {
@@ -37,7 +38,7 @@ export class MongoSupplier extends BaseStore<ISupplier> {
     };
 
     if (filters.keyword) {
-      const regex = new RegExp(escapeRegExp(filters.keyword), 'i');
+      const regex = createUnsignedRegex(filters.keyword);
       condition.$or = [{ name: { $regex: regex } }];
     }
 

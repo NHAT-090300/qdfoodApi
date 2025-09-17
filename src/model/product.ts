@@ -23,6 +23,7 @@ export class Product implements IProduct {
   type: EProductType;
   suppliers?: ISupplierInfo[];
   isRetailAvailable?: boolean;
+  isShow?: boolean;
   slug?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -40,6 +41,7 @@ export class Product implements IProduct {
     this.type = data.type || EProductType?.PRODUCT;
     this.suppliers = data.suppliers ?? [];
     this.isRetailAvailable = data.isRetailAvailable;
+    this.isShow = data.isShow;
     this.slug = data.slug;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
@@ -67,6 +69,7 @@ export class Product implements IProduct {
         .default(EProductType.PRODUCT)
         .required(),
       isRetailAvailable: yup.boolean().default(false),
+      isShow: yup.boolean().default(true),
       suppliers: yup.array().of(
         yup.object().shape({
           supplierId: yup.string().objectId().required(),
