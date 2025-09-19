@@ -30,7 +30,7 @@ export function initProductLog(api: API) {
     api.handler(
       authorization({
         role: ERole.ADMIN,
-        permissions: [EPermission.WRITE_MATERIAL_HISTORY],
+        permissions: [EPermission.WRITE_INVENTORY],
       }),
     ),
     api.handler(handlers.create),
