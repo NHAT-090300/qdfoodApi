@@ -72,8 +72,8 @@ export function initProduct(api: API) {
     ),
     api.handler(handlers.updateProduct),
   );
-  api.baseRoutes.product.delete(
-    '/delete/:id',
+  api.baseRoutes.product.put(
+    '/update-status/:id',
     api.handler(authentication()),
     api.handler(
       authorization({
@@ -81,6 +81,6 @@ export function initProduct(api: API) {
         permissions: [EPermission.WRITE_PRODUCT],
       }),
     ),
-    api.handler(handlers.deleteProduct),
+    api.handler(handlers.updateStatus),
   );
 }

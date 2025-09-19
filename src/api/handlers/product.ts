@@ -275,7 +275,7 @@ export async function updateProduct(
   }
 }
 
-export async function deleteProduct(
+export async function updateStatus(
   ctx: Context,
   req: Request,
   res: Response,
@@ -292,7 +292,12 @@ export async function deleteProduct(
       });
     }
 
-    const result = await new ProductApp(ctx).delete(id);
+    const oldProduct = await new ProductApp(ctx).getById(id);
+
+    const result = await new ProductApp(ctx).update(
+      id,
+      new Product({ ...oldProduct, isShow: !oldProduct?.isShow }),
+    );
 
     res.json(result);
   } catch (error) {
