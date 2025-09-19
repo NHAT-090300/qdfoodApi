@@ -34,6 +34,14 @@ export async function loginAdmin(
       });
     }
 
+    if (user?.isDelete) {
+      throw new AppError({
+        id: `${where}.login`,
+        message: 'Tài khoản đã bị xóa hoặc không tồn tại',
+        statusCode: StatusCodes.FORBIDDEN,
+      });
+    }
+
     // CHECK FOR USER VERIFIED AND EXISTING
     if (!user || !isValidPass) {
       throw new AppError({

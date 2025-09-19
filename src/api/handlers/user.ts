@@ -296,7 +296,7 @@ export async function deleteUser(
 
     const oldUser = await new UserApp(ctx).getById(id);
 
-    if (oldUser?.role === ERole.SUPPER || oldUser?.role === ERole.ADMIN) {
+    if (oldUser?.role === ERole.SUPPER) {
       throw new AppError({
         id: `${where}.updateUser`,
         message: 'không thể xóa tài khoản supper admin',
