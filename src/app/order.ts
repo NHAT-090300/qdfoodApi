@@ -154,7 +154,10 @@ export class OrderApp extends BaseApp {
         .inventory()
         .findOne({ productId: new ObjectId(item.productId) });
       const inventoryQuantity = inventory?.quantity ?? 0;
-      const missingQuantity = Math.max(0, item.quantity - inventoryQuantity);
+      const missingQuantity = Math.max(
+        0,
+        Math.round((item.quantity - inventoryQuantity) * 100) / 100,
+      );
 
       result.push({
         ...item,

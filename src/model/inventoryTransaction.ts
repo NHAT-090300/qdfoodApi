@@ -14,6 +14,7 @@ export class InventoryTransaction implements IInventoryTransaction {
   type: EInventoryTransactionType;
   quantity: number;
   orderId?: ObjectId;
+  userId?: ObjectId;
   productLogId?: ObjectId;
   note?: string;
   price: number;
@@ -29,6 +30,7 @@ export class InventoryTransaction implements IInventoryTransaction {
     this.quantity = data.quantity || 0;
     this.price = data.price || 0;
     this.orderId = data.orderId;
+    this.userId = data.userId;
     this.productLogId = data.productLogId;
     this.note = data.note;
     this.refundPrice = data?.refundPrice || 0;
@@ -44,6 +46,7 @@ export class InventoryTransaction implements IInventoryTransaction {
       type: yup.string().oneOf(Object.values(EInventoryTransactionType)).required(),
       quantity: yup.number().required().default(0),
       orderId: yup.string().objectId(),
+      userId: yup.string().objectId(),
       productLogId: yup.string().objectId(),
       note: yup.string(),
       refundPrice: yup.number().default(0),
@@ -60,6 +63,7 @@ export class InventoryTransaction implements IInventoryTransaction {
       productId: new ObjectId(result.productId),
       supplierId: result?.supplierId ? new ObjectId(result?.supplierId) : undefined,
       orderId: result?.orderId ? new ObjectId(result.orderId) : undefined,
+      userId: result?.userId ? new ObjectId(result.userId) : undefined,
       productLogId: result?.productLogId ? new ObjectId(result.productLogId) : undefined,
     });
   }
@@ -93,6 +97,7 @@ export class InventoryTransaction implements IInventoryTransaction {
           ...item,
           productId: new ObjectId(item.productId),
           supplierId: new ObjectId(item.supplierId),
+          userId: new ObjectId(item.userId),
         }),
     );
   }

@@ -70,7 +70,7 @@ export class InventoryTransactionApp extends BaseApp {
 
   async create(data: InventoryTransaction) {
     try {
-      if (data?.type === EInventoryTransactionType.RETURN_DAMAGED) {
+      if (data?.type === EInventoryTransactionType.REFUND) {
         await this.getStore()
           .inventory()
           .baseUpdate(
@@ -80,6 +80,7 @@ export class InventoryTransactionApp extends BaseApp {
             {
               $inc: {
                 refundAmount: data?.quantity,
+                quantity: data?.quantity,
               },
             },
           );

@@ -194,9 +194,10 @@ export async function updateInventoryQuantity(
     await new InventoryTransactionApp(ctx).create(
       new InventoryTransaction({
         productId: data?.productId,
-        type: EInventoryTransactionType.EXPORT,
+        type: EInventoryTransactionType.DAMAGED,
         price: 0,
-        note: `Người dùng ${userId} đã cập nhật số lượng "${reason}"`,
+        userId,
+        note: `lý do: ${reason || 'Admin cập nhật'}`,
         quantity: Number(damagedQuantity || 0),
       }),
     );

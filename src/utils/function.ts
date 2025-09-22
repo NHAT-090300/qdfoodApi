@@ -271,9 +271,13 @@ export const getTransactionTypeTag = (type: EInventoryTransactionType) => {
       color: 'geekblue',
       text: 'Xuất kho',
     },
-    [EInventoryTransactionType.RETURN_DAMAGED]: {
+    [EInventoryTransactionType.REFUND]: {
       color: 'volcano',
       text: 'Hoàn trả',
+    },
+    [EInventoryTransactionType.DAMAGED]: {
+      color: 'volcano',
+      text: 'Bị hư',
     },
     [EInventoryTransactionType.PRODUC_EXPORT]: {
       color: 'blue',

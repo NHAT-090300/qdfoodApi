@@ -33,9 +33,10 @@ export enum EOrderStatus {
 export enum EInventoryTransactionType {
   IMPORT = 'IMPORT',
   EXPORT = 'EXPORT',
-  RETURN_DAMAGED = 'RETURN_DAMAGED',
+  REFUND = 'REFUND',
+  DAMAGED = 'DAMAGED',
   PRODUC_IMPORT = 'PRODUC_IMPORT',
-  PRODUC_EXPORT = ' PRODUC_EXPORT',
+  PRODUC_EXPORT = 'PRODUC_EXPORT',
 }
 
 export enum EPermission {

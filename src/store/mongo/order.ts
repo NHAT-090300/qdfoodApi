@@ -502,7 +502,6 @@ export class MongoOrder extends BaseStore<IOrder> {
             status: { $in: [EOrderStatus.CONFIRM] },
           },
         },
-        { $sort: sort },
         { $unwind: '$items' },
         {
           $group: {
@@ -539,52 +538,35 @@ export class MongoOrder extends BaseStore<IOrder> {
               $ifNull: ['$inventory.quantity', 0], // bỏ $sum
             },
             missingQuantity: {
-              $cond: {
-                if: {
-                  $gt: [
-                    '$totalOrder',
-                    {
-                      $ifNull: ['$inventory.quantity', 0],
-                    },
-                  ],
+              $round: [
+                {
+                  $cond: {
+                    if: { $gt: ['$totalOrder', { $ifNull: ['$inventory.quantity', 0] }] },
+                    then: { $subtract: ['$totalOrder', { $ifNull: ['$inventory.quantity', 0] }] },
+                    else: 0,
+                  },
                 },
-                then: {
-                  $subtract: [
-                    '$totalOrder',
-                    {
-                      $ifNull: ['$inventory.quantity', 0],
-                    },
-                  ],
-                },
-                else: 0,
-              },
+                2,
+              ],
             },
             remainingStock: {
-              $cond: {
-                if: {
-                  $gte: [
-                    {
-                      $ifNull: ['$inventory.quantity', 0],
-                    },
-                    '$totalOrder',
-                  ],
+              $round: [
+                {
+                  $cond: {
+                    if: { $gte: [{ $ifNull: ['$inventory.quantity', 0] }, '$totalOrder'] },
+                    then: { $subtract: [{ $ifNull: ['$inventory.quantity', 0] }, '$totalOrder'] },
+                    else: 0,
+                  },
                 },
-                then: {
-                  $subtract: [
-                    {
-                      $ifNull: ['$inventory.quantity', 0],
-                    },
-                    '$totalOrder',
-                  ],
-                },
-                else: 0,
-              },
+                2,
+              ],
             },
             product: {
               $arrayElemAt: ['$product', 0],
             },
           },
         },
+        { $sort: sort },
         { $project: { inventory: 0 } },
         {
           $facet: {
@@ -656,46 +638,28 @@ export class MongoOrder extends BaseStore<IOrder> {
               $ifNull: [{ $sum: '$inventory.quantity' }, 0],
             },
             missingQuantity: {
-              $cond: {
-                if: {
-                  $gt: [
-                    '$totalOrder',
-                    {
-                      $ifNull: ['$inventory.quantity', 0],
-                    },
-                  ],
+              $round: [
+                {
+                  $cond: {
+                    if: { $gt: ['$totalOrder', { $ifNull: ['$inventory.quantity', 0] }] },
+                    then: { $subtract: ['$totalOrder', { $ifNull: ['$inventory.quantity', 0] }] },
+                    else: 0,
+                  },
                 },
-                then: {
-                  $subtract: [
-                    '$totalOrder',
-                    {
-                      $ifNull: ['$inventory.quantity', 0],
-                    },
-                  ],
-                },
-                else: 0,
-              },
+                2,
+              ],
             },
             remainingStock: {
-              $cond: {
-                if: {
-                  $gte: [
-                    {
-                      $ifNull: ['$inventory.quantity', 0],
-                    },
-                    '$totalOrder',
-                  ],
+              $round: [
+                {
+                  $cond: {
+                    if: { $gte: [{ $ifNull: ['$inventory.quantity', 0] }, '$totalOrder'] },
+                    then: { $subtract: [{ $ifNull: ['$inventory.quantity', 0] }, '$totalOrder'] },
+                    else: 0,
+                  },
                 },
-                then: {
-                  $subtract: [
-                    {
-                      $ifNull: ['$inventory.quantity', 0],
-                    },
-                    '$totalOrder',
-                  ],
-                },
-                else: 0,
-              },
+                2,
+              ],
             },
             product: {
               $arrayElemAt: ['$product', 0],

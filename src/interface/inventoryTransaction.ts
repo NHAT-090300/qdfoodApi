@@ -8,6 +8,7 @@ export interface IInventoryTransaction {
   type: EInventoryTransactionType;
   quantity: number;
   orderId?: ObjectId;
+  userId?: ObjectId;
   productLogId?: ObjectId;
   relatedOrderId?: ObjectId;
   price: number;
