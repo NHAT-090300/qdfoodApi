@@ -26,23 +26,6 @@ export async function createInventoryTransaction(
   }
 }
 
-export async function createManyInventoryTransaction(
-  ctx: Context,
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
-  try {
-    const data = await InventoryTransaction.sequelizeArray(req.body);
-
-    const result = await new InventoryTransactionApp(ctx).createMany(data);
-
-    res.json(result);
-  } catch (error) {
-    next(error);
-  }
-}
-
 export async function getPagination(
   ctx: Context,
   req: Request,

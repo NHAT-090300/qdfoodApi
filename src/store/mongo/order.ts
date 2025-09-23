@@ -406,7 +406,99 @@ export class MongoOrder extends BaseStore<IOrder> {
 
     // Chỉ update những field có giá trị
     const fieldsToUpdate: Record<string, any> = {};
-    ['quantity', 'damagedQuantity', 'refundAmount'].forEach((key) => {
+    ['damagedQuantity', 'refundAmount'].forEach((key) => {
+      if (updateItem[key as keyof IOrderItem] !== undefined) {
+        fieldsToUpdate[key] = updateItem[key as keyof IOrderItem];
+      }
+    });
+
+    return this.collection.updateOne({ _id: new ObjectId(orderId) }, [
+      {
+        $set: {
+          items: {
+            $map: {
+              input: '$items',
+              as: 'item',
+              in: {
+                $cond: [
+                  { $eq: ['$$item.productId', productId] },
+                  { $mergeObjects: ['$$item', fieldsToUpdate] },
+                  '$$item',
+                ],
+              },
+            },
+          },
+          total: {
+            $reduce: {
+              input: {
+                $map: {
+                  input: '$items',
+                  as: 'item',
+                  in: {
+                    $cond: [
+                      { $eq: ['$$item.productId', productId] },
+                      { $mergeObjects: ['$$item', fieldsToUpdate] },
+                      '$$item',
+                    ],
+                  },
+                },
+              },
+              initialValue: 0,
+              in: {
+                $add: [
+                  '$$value',
+                  {
+                    $multiply: [
+                      {
+                        $subtract: [
+                          { $ifNull: ['$$this.quantity', 0] },
+                          { $ifNull: ['$$this.damagedQuantity', 0] },
+                        ],
+                      },
+                      { $ifNull: ['$$this.price', 0] },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+          unpaidAmount: {
+            $subtract: [
+              '$unpaidAmount',
+              {
+                $multiply: [
+                  { $ifNull: [updateItem.damagedQuantity, 0] },
+                  {
+                    $let: {
+                      vars: {
+                        matchedItem: {
+                          $first: {
+                            $filter: {
+                              input: '$items',
+                              as: 'item',
+                              cond: { $eq: ['$$item.productId', productId] },
+                            },
+                          },
+                        },
+                      },
+                      in: { $ifNull: ['$$matchedItem.price', 0] },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      },
+    ]);
+  };
+
+  updateOrderItemQuantity = async (orderId: string, updateItem: IOrderItem) => {
+    const productId = new ObjectId(updateItem.productId);
+
+    // Chỉ update những field có giá trị
+    const fieldsToUpdate: Record<string, any> = {};
+    ['quantity'].forEach((key) => {
       if (updateItem[key as keyof IOrderItem] !== undefined) {
         fieldsToUpdate[key] = updateItem[key as keyof IOrderItem];
       }

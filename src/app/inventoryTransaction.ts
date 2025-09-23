@@ -79,7 +79,6 @@ export class InventoryTransactionApp extends BaseApp {
             },
             {
               $inc: {
-                refundAmount: data?.quantity,
                 quantity: data?.quantity,
               },
             },
@@ -193,7 +192,7 @@ export class InventoryTransactionApp extends BaseApp {
           item.quantity ?? 0,
           getTransactionTypeTag(item.type)?.text ?? '-',
           item.price ?? 0,
-          item.refundPrice ?? 0,
+          item.refundAmount ?? 0,
           item.note ?? '',
           moment(item?.createdAt).format('HH:mm:ss DD/MM/YYYY') ?? '',
         ];

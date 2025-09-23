@@ -51,9 +51,7 @@ export class Inventory implements IInventory {
         .of(
           yup.object({
             productId: yup.string().objectId().required(),
-            // supplierId: yup.string().objectId().required(),
             quantity: yup.number().default(0),
-            refundAmount: yup.number().default(0),
           }),
         )
         .required(),

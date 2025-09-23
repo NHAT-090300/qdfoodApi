@@ -12,7 +12,7 @@ export interface IInventoryTransaction {
   productLogId?: ObjectId;
   relatedOrderId?: ObjectId;
   price: number;
-  refundPrice?: number;
+  refundAmount?: number;
   note?: string;
   createdAt?: Date;
   updatedAt?: Date;

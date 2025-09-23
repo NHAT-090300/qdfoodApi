@@ -8,7 +8,6 @@ export interface IInventory {
   quantity: number;
   createdAt?: Date;
   updatedAt?: Date;
-  refundAmount?: number;
 }
 
 export interface IInventoryFilter {

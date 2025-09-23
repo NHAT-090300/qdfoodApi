@@ -253,7 +253,7 @@ export class OrderApp extends BaseApp {
             quantity: item.quantity,
             orderId: order._id,
             price: item.price,
-            refundPrice: item.refundAmount,
+            refundAmount: Math.round(Number(item.price) * Number(item.quantity) * 100) / 100,
             note: `Xuất kho tạo khi đơn hàng ${order._id?.toString()}`,
           });
 
@@ -645,7 +645,7 @@ export class OrderApp extends BaseApp {
     doc.save(`phieu-giao-hang-${Date.now()}.pdf`);
   }
 
-  async updateOrderItemRefund(orderId: string, data: IOrderItem) {
+  async updateOrderItemRefund(orderId: string, data: IOrderItem & { reason: string }) {
     try {
       const order = await this.getStore().order().findById(orderId);
 
@@ -657,7 +657,68 @@ export class OrderApp extends BaseApp {
         });
       }
 
+      if (!data.quantity || data.quantity <= 0) {
+        throw new AppError({
+          id: `${where}.updateOrderItemRefund`,
+          message: 'Số lượng phải lớn hơn 0',
+          statusCode: StatusCodes.BAD_REQUEST,
+        });
+      }
+
+      const inventoryTransaction = await InventoryTransaction.sequelize({
+        productId: data.productId,
+        quantity: data.quantity,
+        type: EInventoryTransactionType.REFUND,
+        note: `${data.reason || 'Hoàn trả lại hàng'} - đơn hàng ${orderId}`,
+        orderId: order._id,
+        refundAmount: Math.round(Number(data.price) * Number(data.quantity) * 100) / 100,
+      });
+
+      // update orderItem
       await this.getStore().order().updateOrderItemRefund(orderId, data);
+
+      // update inventory
+      await this.getStore()
+        .inventory()
+        .baseUpdate(
+          {
+            productId: new ObjectId(data?.productId),
+          },
+          {
+            $inc: {
+              quantity: data?.quantity,
+            },
+          },
+        );
+
+      // create inventory transaction
+      await this.getStore().inventoryTransaction().createOne(inventoryTransaction);
+    } catch (error: any) {
+      console.log(error);
+      if (error instanceof AppError) throw error;
+
+      throw new AppError({
+        id: `${where}.updateStatus`,
+        message: 'Cập nhật order thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+
+  async updateOrderItemQuantity(orderId: string, data: IOrderItem) {
+    try {
+      const order = await this.getStore().order().findById(orderId);
+
+      if (!order) {
+        throw new AppError({
+          id: `${where}.string`,
+          message: 'Dữ liệu không tồn tại trong hệ thống',
+          statusCode: StatusCodes.BAD_REQUEST,
+        });
+      }
+
+      await this.getStore().order().updateOrderItemQuantity(orderId, data);
     } catch (error: any) {
       console.log(error);
       if (error instanceof AppError) throw error;

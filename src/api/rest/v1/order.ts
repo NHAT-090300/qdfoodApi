@@ -125,7 +125,7 @@ export function initOrder(api: API) {
   );
 
   api.baseRoutes.order.put(
-    '/:id/updateOrderItem',
+    '/:id/refund-item',
     api.handler(authentication()),
     api.handler(
       authorization({
@@ -134,6 +134,18 @@ export function initOrder(api: API) {
       }),
     ),
     api.handler(handlers.updateOrderItemRefund),
+  );
+
+  api.baseRoutes.order.put(
+    '/:id/update-quantity-item',
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+        permissions: [EPermission.WRITE_ORDER],
+      }),
+    ),
+    api.handler(handlers.updateOrderItemQuantity),
   );
 
   api.baseRoutes.order.get(

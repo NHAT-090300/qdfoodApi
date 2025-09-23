@@ -32,9 +32,34 @@ export async function createManyInventory(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const data = await Inventory.sequelizeArray(req.body);
+    const userId = req.user?._id;
+    if (!req.body.inventories || !Array.isArray(req.body.inventories)) {
+      throw new AppError({
+        id: `${where}.createManyInventory`,
+        message: 'inventories không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
 
-    const result = await new InventoryApp(ctx).createMany(data);
+    const inventoryTransactions = await InventoryTransaction.sequelizeArray(
+      req.body.inventories?.map(
+        (item: any) =>
+          new InventoryTransaction({
+            ...item,
+            userId,
+            type: EInventoryTransactionType.IMPORT,
+            note: 'Nhập sản phẩm vào kho',
+          }),
+      ),
+    );
+
+    const dataInventories = await Inventory.sequelizeArray(req.body.inventories);
+    const dataInventoryTransactions =
+      await InventoryTransaction.sequelizeArray(inventoryTransactions);
+
+    const result = await new InventoryApp(ctx).createMany(dataInventories);
+
+    await new InventoryTransactionApp(ctx).createMany(dataInventoryTransactions);
 
     res.json(result);
   } catch (error) {

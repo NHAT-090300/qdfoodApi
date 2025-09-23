@@ -18,7 +18,7 @@ export class InventoryTransaction implements IInventoryTransaction {
   productLogId?: ObjectId;
   note?: string;
   price: number;
-  refundPrice?: number;
+  refundAmount?: number;
   createdAt?: Date;
   updatedAt?: Date;
 
@@ -33,7 +33,7 @@ export class InventoryTransaction implements IInventoryTransaction {
     this.userId = data.userId;
     this.productLogId = data.productLogId;
     this.note = data.note;
-    this.refundPrice = data?.refundPrice || 0;
+    this.refundAmount = data?.refundAmount || 0;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
   }
@@ -49,7 +49,7 @@ export class InventoryTransaction implements IInventoryTransaction {
       userId: yup.string().objectId(),
       productLogId: yup.string().objectId(),
       note: yup.string(),
-      refundPrice: yup.number().default(0),
+      refundAmount: yup.number().default(0),
     });
 
     const [errors, result] = await to(validateWithYup(schema, data));

@@ -3,8 +3,14 @@ import { StatusCodes } from 'http-status-codes';
 
 import { Context } from 'api';
 import { OrderApp, ProductApp, UserApp } from 'app';
-import { EOrderStatus, EPaymentMethod, IOrderFilter, IOrderItem } from 'interface';
-import { AppError, Order } from 'model';
+import {
+  EInventoryTransactionType,
+  EOrderStatus,
+  EPaymentMethod,
+  IOrderFilter,
+  IOrderItem,
+} from 'interface';
+import { AppError, InventoryTransaction, Order } from 'model';
 import { isValidId, tryParseJson, validatePagination, validatePhone } from 'utils';
 
 const where = 'Handlers.order';
@@ -516,6 +522,8 @@ export async function updateOrderItemRefund(
   try {
     const id = req.params.id as string;
 
+    const userId = req.user?._id as string;
+
     if (!isValidId(id)) {
       throw new AppError({
         id: `${where}.deleteOrder`,
@@ -524,7 +532,34 @@ export async function updateOrderItemRefund(
       });
     }
 
-    await new OrderApp(ctx).updateOrderItemRefund(id, req.body);
+    await new OrderApp(ctx).updateOrderItemRefund(id, { ...req.body, userId });
+
+    res.json('ok');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateOrderItemQuantity(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = req.params.id as string;
+
+    const userId = req.user?._id as string;
+
+    if (!isValidId(id)) {
+      throw new AppError({
+        id: `${where}.deleteOrder`,
+        message: 'id không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    await new OrderApp(ctx).updateOrderItemQuantity(id, { ...req.body, userId });
 
     res.json('ok');
   } catch (error) {
