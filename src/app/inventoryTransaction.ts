@@ -79,7 +79,7 @@ export class InventoryTransactionApp extends BaseApp {
             },
             {
               $inc: {
-                quantity: Decimal128.fromString(data.quantity.toString()),
+                quantity: data.quantity,
               },
             },
           );

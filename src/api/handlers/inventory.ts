@@ -3,6 +3,7 @@ import { InventoryApp, InventoryTransactionApp } from 'app';
 import { NextFunction, Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { EInventoryTransactionType, IInventoryFilter } from 'interface';
+import { round } from 'lodash';
 import { AppError, Inventory, InventoryTransaction } from 'model';
 import { isValidId, tryParseJson, validatePagination } from 'utils';
 
@@ -211,7 +212,7 @@ export async function updateInventoryQuantity(
 
     const data = await Inventory.sequelize({
       ...oldInventory,
-      quantity: Number(oldInventory?.quantity || 0) - Number(damagedQuantity || 0),
+      quantity: round(Number(oldInventory?.quantity || 0) - Number(damagedQuantity || 0), 2),
     });
 
     const result = await new InventoryApp(ctx).update(id, data);

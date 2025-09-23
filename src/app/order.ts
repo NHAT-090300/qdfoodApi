@@ -1,15 +1,16 @@
 /* eslint-disable new-cap */
 import ExcelJS from 'exceljs';
 import { StatusCodes } from 'http-status-codes';
-import { findOrderWithStatus, formatCurrency, getOrderAddress } from 'utils';
+import { EInventoryTransactionType, EOrderStatus, IOrderFilter, IOrderItem } from 'interface';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { jsPDF } from 'jspdf';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import autoTable from 'jspdf-autotable';
-
-import { EInventoryTransactionType, EOrderStatus, IOrderFilter, IOrderItem } from 'interface';
+import { round } from 'lodash';
 import { AppError, InventoryTransaction, Order } from 'model';
-import { Decimal128, ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
+import { findOrderWithStatus, formatCurrency, getOrderAddress } from 'utils';
+
 import BaseApp from './base';
 
 const where = 'App.order';
@@ -156,7 +157,7 @@ export class OrderApp extends BaseApp {
       const inventoryQuantity = inventory?.quantity ?? 0;
       const missingQuantity = Math.max(
         0,
-        Math.round((item.quantity - inventoryQuantity) * 100) / 100,
+        round((+item.quantity || 0) - (+inventoryQuantity || 0), 2),
       );
 
       result.push({
@@ -253,7 +254,7 @@ export class OrderApp extends BaseApp {
             quantity: item.quantity,
             orderId: order._id,
             price: item.price,
-            refundAmount: Math.round(Number(item.price) * Number(item.quantity) * 100) / 100,
+            refundAmount: round(item.price * item.quantity, 2),
             note: `Xuất kho tạo khi đơn hàng ${order._id?.toString()}`,
           });
 
@@ -657,7 +658,11 @@ export class OrderApp extends BaseApp {
         });
       }
 
-      if (!data.quantity || data.quantity <= 0) {
+      const orderItem = order?.items?.find(
+        (item) => item.productId?.toString() === data.productId?.toString(),
+      );
+
+      if (typeof data.quantity !== 'number' || data.quantity <= 0) {
         throw new AppError({
           id: `${where}.updateOrderItemRefund`,
           message: 'Số lượng phải lớn hơn 0',
@@ -665,18 +670,20 @@ export class OrderApp extends BaseApp {
         });
       }
 
-      if (
-        !data.refundAmount ||
-        data.refundAmount <= 0 ||
-        !data.damagedQuantity ||
-        data.damagedQuantity <= 0
-      ) {
+      if (!orderItem) {
         throw new AppError({
           id: `${where}.updateOrderItemRefund`,
-          message: 'damagedQuantity và refundAmount phải lớn hơn 0',
+          message: 'Dữ liệu không tồn tại trong hệ thống',
           statusCode: StatusCodes.BAD_REQUEST,
         });
       }
+
+      const totalDamagedQuantity = round(
+        (orderItem?.damagedQuantity || 0) + (data.quantity || 0),
+        2,
+      );
+
+      const totalRefundAmount = round((totalDamagedQuantity || 0) * (orderItem?.price || 0), 2);
 
       const inventoryTransaction = await InventoryTransaction.sequelize({
         productId: data.productId,
@@ -684,7 +691,7 @@ export class OrderApp extends BaseApp {
         type: EInventoryTransactionType.REFUND,
         note: `${data.reason || 'Hoàn trả lại hàng'} - đơn hàng ${orderId}`,
         orderId: order._id,
-        refundAmount: Math.round(Number(data.price) * Number(data.quantity) * 100) / 100,
+        refundAmount: round(data.price * data.quantity, 2),
       });
 
       // update orderItem
@@ -692,8 +699,8 @@ export class OrderApp extends BaseApp {
         .order()
         .updateOrderItemRefund(orderId, {
           ...data,
-          damagedQuantity: data.damagedQuantity ?? 0,
-          refundAmount: data.refundAmount ?? 0,
+          damagedQuantity: totalDamagedQuantity,
+          refundAmount: totalRefundAmount,
         });
 
       // update inventory
@@ -705,7 +712,7 @@ export class OrderApp extends BaseApp {
           },
           {
             $inc: {
-              quantity: Decimal128.fromString(data.quantity.toString()),
+              quantity: data.quantity,
             },
           },
         );

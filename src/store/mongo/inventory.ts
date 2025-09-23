@@ -251,7 +251,7 @@ export class MongoInventory extends BaseStore<IInventory> {
         updateOne: {
           filter: { productId: item.productId },
           update: {
-            $inc: { quantity: Decimal128.fromString(item.quantity.toString()) },
+            $inc: { quantity: item.quantity },
             $set: {
               updatedAt: now,
             },

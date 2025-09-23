@@ -532,7 +532,16 @@ export async function updateOrderItemRefund(
       });
     }
 
-    await new OrderApp(ctx).updateOrderItemRefund(id, { ...req.body, userId });
+    const data = req.body;
+
+    await new OrderApp(ctx).updateOrderItemRefund(id, {
+      ...data,
+      userId,
+      quantity: Number(data.quantity || 0),
+      damagedQuantity: Number(data.damagedQuantity || 0),
+      refundAmount: Number(data.refundAmount || 0),
+      reason: data.reason,
+    });
 
     res.json('ok');
   } catch (error) {
