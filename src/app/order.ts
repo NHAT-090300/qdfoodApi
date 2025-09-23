@@ -9,7 +9,7 @@ import autoTable from 'jspdf-autotable';
 
 import { EInventoryTransactionType, EOrderStatus, IOrderFilter, IOrderItem } from 'interface';
 import { AppError, InventoryTransaction, Order } from 'model';
-import { ObjectId } from 'mongodb';
+import { Decimal128, ObjectId } from 'mongodb';
 import BaseApp from './base';
 
 const where = 'App.order';
@@ -665,6 +665,19 @@ export class OrderApp extends BaseApp {
         });
       }
 
+      if (
+        !data.refundAmount ||
+        data.refundAmount <= 0 ||
+        !data.damagedQuantity ||
+        data.damagedQuantity <= 0
+      ) {
+        throw new AppError({
+          id: `${where}.updateOrderItemRefund`,
+          message: 'damagedQuantity và refundAmount phải lớn hơn 0',
+          statusCode: StatusCodes.BAD_REQUEST,
+        });
+      }
+
       const inventoryTransaction = await InventoryTransaction.sequelize({
         productId: data.productId,
         quantity: data.quantity,
@@ -675,7 +688,13 @@ export class OrderApp extends BaseApp {
       });
 
       // update orderItem
-      await this.getStore().order().updateOrderItemRefund(orderId, data);
+      await this.getStore()
+        .order()
+        .updateOrderItemRefund(orderId, {
+          ...data,
+          damagedQuantity: data.damagedQuantity ?? 0,
+          refundAmount: data.refundAmount ?? 0,
+        });
 
       // update inventory
       await this.getStore()
@@ -686,7 +705,7 @@ export class OrderApp extends BaseApp {
           },
           {
             $inc: {
-              quantity: data?.quantity,
+              quantity: Decimal128.fromString(data.quantity.toString()),
             },
           },
         );

@@ -3,7 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 import { EInventoryTransactionType, IInventoryTransactionFilter } from 'interface';
 import { AppError, InventoryTransaction } from 'model';
 import moment from 'moment';
-import { ObjectId } from 'mongodb';
+import { Decimal128, ObjectId } from 'mongodb';
 import { getTransactionTypeTag } from 'utils';
 
 import BaseApp from './base';
@@ -79,7 +79,7 @@ export class InventoryTransactionApp extends BaseApp {
             },
             {
               $inc: {
-                quantity: data?.quantity,
+                quantity: Decimal128.fromString(data.quantity.toString()),
               },
             },
           );

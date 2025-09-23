@@ -2,7 +2,7 @@ import { StatusCodes } from 'http-status-codes';
 import { ESortOrder, IInventory, IInventoryFilter, IOrder } from 'interface';
 import { isArray, isNumber } from 'lodash';
 import { AppError, Inventory } from 'model';
-import { ClientSession, Db, ObjectId } from 'mongodb';
+import { ClientSession, Db, Decimal128, ObjectId } from 'mongodb';
 import { createUnsignedRegex } from 'utils';
 
 import { BaseStore } from './base';
@@ -251,7 +251,7 @@ export class MongoInventory extends BaseStore<IInventory> {
         updateOne: {
           filter: { productId: item.productId },
           update: {
-            $inc: { quantity: item.quantity },
+            $inc: { quantity: Decimal128.fromString(item.quantity.toString()) },
             $set: {
               updatedAt: now,
             },
