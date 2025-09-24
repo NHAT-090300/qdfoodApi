@@ -215,18 +215,18 @@ export async function updateInventoryQuantity(
       quantity: round(Number(oldInventory?.quantity || 0) - Number(damagedQuantity || 0), 2),
     });
 
+    const transaction = await InventoryTransaction.sequelize({
+      productId: data?.productId,
+      type: EInventoryTransactionType.DAMAGED,
+      price: 0,
+      userId,
+      note: `lý do: ${reason || 'Admin cập nhật'}`,
+      quantity: Number(damagedQuantity || 0),
+    });
+
     const result = await new InventoryApp(ctx).update(id, data);
 
-    await new InventoryTransactionApp(ctx).create(
-      new InventoryTransaction({
-        productId: data?.productId,
-        type: EInventoryTransactionType.DAMAGED,
-        price: 0,
-        userId,
-        note: `lý do: ${reason || 'Admin cập nhật'}`,
-        quantity: Number(damagedQuantity || 0),
-      }),
-    );
+    await new InventoryTransactionApp(ctx).create(transaction);
 
     res.json(result);
   } catch (error) {

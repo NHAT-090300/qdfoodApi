@@ -227,6 +227,7 @@ export class OrderApp extends BaseApp {
   async updateStatus(
     orderId: string,
     data: {
+      userId: string;
       status: EOrderStatus;
       reason?: string;
       paymentVerifierId?: string;
@@ -248,12 +249,13 @@ export class OrderApp extends BaseApp {
         await this.getStore().inventory().updateInventoryFromOrder(order);
 
         for (const item of order.items) {
-          const transaction = new InventoryTransaction({
+          const transaction = await InventoryTransaction.sequelize({
             productId: item.productId,
             type: EInventoryTransactionType.EXPORT,
             quantity: item.quantity,
             orderId: order._id,
             price: item.price,
+            userId: new ObjectId(data.userId),
             refundAmount: round(item.price * item.quantity, 2),
             note: `Xuất kho tạo khi đơn hàng ${order._id?.toString()}`,
           });
@@ -646,7 +648,10 @@ export class OrderApp extends BaseApp {
     doc.save(`phieu-giao-hang-${Date.now()}.pdf`);
   }
 
-  async updateOrderItemRefund(orderId: string, data: IOrderItem & { reason: string }) {
+  async updateOrderItemRefund(
+    orderId: string,
+    data: IOrderItem & { reason: string; userId: string },
+  ) {
     try {
       const order = await this.getStore().order().findById(orderId);
 
@@ -688,6 +693,7 @@ export class OrderApp extends BaseApp {
       const inventoryTransaction = await InventoryTransaction.sequelize({
         productId: data.productId,
         quantity: data.quantity,
+        userId: data.userId,
         type: EInventoryTransactionType.REFUND,
         note: `${data.reason || 'Hoàn trả lại hàng'} - đơn hàng ${orderId}`,
         orderId: order._id,

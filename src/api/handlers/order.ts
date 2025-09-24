@@ -3,14 +3,8 @@ import { StatusCodes } from 'http-status-codes';
 
 import { Context } from 'api';
 import { OrderApp, ProductApp, UserApp } from 'app';
-import {
-  EInventoryTransactionType,
-  EOrderStatus,
-  EPaymentMethod,
-  IOrderFilter,
-  IOrderItem,
-} from 'interface';
-import { AppError, InventoryTransaction, Order } from 'model';
+import { EOrderStatus, EPaymentMethod, IOrderFilter, IOrderItem } from 'interface';
+import { AppError, Order } from 'model';
 import { isValidId, tryParseJson, validatePagination, validatePhone } from 'utils';
 
 const where = 'Handlers.order';
@@ -397,6 +391,7 @@ export async function updateStatusOrder(
 ): Promise<void> {
   try {
     const id = req.params.id as string;
+    const userId = req.user?._id;
 
     if (!isValidId(id)) {
       throw new AppError({
@@ -406,7 +401,10 @@ export async function updateStatusOrder(
       });
     }
 
-    await new OrderApp(ctx).updateStatus(id, req.body);
+    await new OrderApp(ctx).updateStatus(id, {
+      ...req.body,
+      userId,
+    });
 
     res.json('ok');
   } catch (error) {

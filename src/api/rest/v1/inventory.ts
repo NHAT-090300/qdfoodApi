@@ -57,28 +57,7 @@ export function initInventory(api: API) {
     ),
     api.handler(handlers.getDetail),
   );
-  api.baseRoutes.inventory.post(
-    '/create',
-    api.handler(authentication()),
-    api.handler(
-      authorization({
-        role: ERole.ADMIN,
-        permissions: [EPermission.WRITE_INVENTORY],
-      }),
-    ),
-    api.handler(handlers.createInventory),
-  );
-  api.baseRoutes.inventory.put(
-    '/:id',
-    api.handler(authentication()),
-    api.handler(
-      authorization({
-        role: ERole.ADMIN,
-        permissions: [EPermission.WRITE_INVENTORY],
-      }),
-    ),
-    api.handler(handlers.updateInventory),
-  );
+
   api.baseRoutes.inventory.put(
     '/quantity/:id',
     api.handler(authentication()),

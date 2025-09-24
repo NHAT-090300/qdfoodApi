@@ -46,14 +46,4 @@ export function initInventorytransaction(api: API) {
     ),
     api.handler(handlers.getDetail),
   );
-  api.baseRoutes.inventoryTransaction.post(
-    '/create',
-    api.handler(authentication()),
-    api.handler(
-      authorization({
-        role: ERole.ADMIN,
-      }),
-    ),
-    api.handler(handlers.createInventoryTransaction),
-  );
 }
