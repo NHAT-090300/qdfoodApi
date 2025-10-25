@@ -80,7 +80,11 @@ export class MongoNews extends BaseStore<INews> {
         {
           $sort: sort,
         },
-        { $project: this.getProject() },
+        {
+          $project: this.getProject({
+            description: -1,
+          }),
+        },
         {
           $facet: {
             data: [{ $skip: paginate.limit * (paginate.page - 1) }, { $limit: paginate.limit }],
