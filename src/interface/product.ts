@@ -35,6 +35,18 @@ export enum EUnit {
   PAIR = 'pair',
   CAN = 'can',
   BUNDLE = 'bundle',
+  FRUIT = 'fruit',
+  UNIT = 'unit',
+  MULTIPACK = 'multipack',
+  SLICE = 'slice',
+  BLISTER = 'blister',
+  BUNCH = 'bunch',
+  TRAY = 'tray',
+  ROLL = 'roll',
+  STACK = 'stack',
+  VEGETABLE_BUNCH = 'vegetable_bunch',
+  PILL = 'pill',
+  CRATE = 'crate',
 }
 
 export enum EProductType {
@@ -44,8 +56,8 @@ export enum EProductType {
 
 export const EUnitDisplay: Record<EUnit, string> = {
   [EUnit.KG]: 'kg',
-  [EUnit.G]: 'gam',
-  [EUnit.L]: 'lít',
+  [EUnit.G]: 'g',
+  [EUnit.L]: 'l',
   [EUnit.ML]: 'ml',
   [EUnit.BOX]: 'hộp',
   [EUnit.PACK]: 'gói',
@@ -57,6 +69,18 @@ export const EUnitDisplay: Record<EUnit, string> = {
   [EUnit.PAIR]: 'cặp',
   [EUnit.CAN]: 'lon',
   [EUnit.BUNDLE]: 'bó',
+  [EUnit.FRUIT]: 'trái',
+  [EUnit.UNIT]: 'con',
+  [EUnit.MULTIPACK]: 'lốc',
+  [EUnit.SLICE]: 'lát',
+  [EUnit.BLISTER]: 'vĩ',
+  [EUnit.BUNCH]: 'nải',
+  [EUnit.TRAY]: 'khay',
+  [EUnit.ROLL]: 'cuộn',
+  [EUnit.STACK]: 'xấp',
+  [EUnit.VEGETABLE_BUNCH]: 'ky',
+  [EUnit.PILL]: 'viên',
+  [EUnit.CRATE]: 'thùng',
 };
 
 export interface ISupplierInfo {
