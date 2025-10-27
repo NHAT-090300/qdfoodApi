@@ -47,6 +47,11 @@ export enum EUnit {
   VEGETABLE_BUNCH = 'vegetable_bunch',
   PILL = 'pill',
   CRATE = 'crate',
+  CYLINDER = 'cylinder',
+  SPINACH = 'spinach',
+  SET = 'set',
+  TREE = 'tree',
+  BALL = 'ball',
 }
 
 export enum EProductType {
@@ -81,6 +86,11 @@ export const EUnitDisplay: Record<EUnit, string> = {
   [EUnit.VEGETABLE_BUNCH]: 'ky',
   [EUnit.PILL]: 'viên',
   [EUnit.CRATE]: 'thùng',
+  [EUnit.CYLINDER]: 'bình',
+  [EUnit.SPINACH]: 'bó',
+  [EUnit.SET]: 'bộ',
+  [EUnit.TREE]: 'cây',
+  [EUnit.BALL]: 'quả',
 };
 
 export interface ISupplierInfo {
