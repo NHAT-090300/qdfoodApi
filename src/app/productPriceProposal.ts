@@ -1,8 +1,8 @@
 import { StatusCodes } from 'http-status-codes';
-
 import { IProductPrice, IProductPriceProposalFilter } from 'interface';
 import { AppError, ProductPriceProposal } from 'model';
 import { ObjectId } from 'mongodb';
+
 import BaseApp from './base';
 
 const where = 'App.productPriceProposal';
@@ -36,6 +36,108 @@ export class ProductPriceProposalApp extends BaseApp {
         message: 'Lấy danh sách productPriceProposal thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         detail: error,
+      });
+    }
+  }
+
+  async bulkCreateProductPriceProposalWithPrice(
+    userId: string,
+    products: { code: string; price: number }[],
+  ) {
+    const validProducts: { code: string; price: number }[] = [];
+    const errors: { code: string; message: string }[] = [];
+
+    const seenCodes = new Set<string>();
+
+    products.forEach((item, index) => {
+      const { code, price } = item;
+
+      if (!code || typeof code !== 'string' || code.trim() === '') {
+        errors.push({ code: `row_${index + 2}`, message: 'Mã sản phẩm không hợp lệ' });
+        return;
+      }
+
+      const trimmedCode = code.trim();
+      if (seenCodes.has(trimmedCode)) {
+        errors.push({ code: trimmedCode, message: 'Mã sản phẩm bị trùng trong danh sách' });
+        return;
+      }
+      seenCodes.add(trimmedCode);
+
+      if (typeof price !== 'number' || Number.isNaN(price) || price <= 0) {
+        errors.push({ code: trimmedCode, message: 'Giá phải là số dương' });
+        return;
+      }
+
+      validProducts.push({ code: trimmedCode, price });
+    });
+
+    if (validProducts.length === 0) {
+      throw new AppError({
+        id: `${where}.bulkCreate`,
+        message: 'Không có sản phẩm hợp lệ để tạo đề xuất giá',
+        statusCode: StatusCodes.BAD_REQUEST,
+        detail: { errors },
+      });
+    }
+
+    try {
+      // === 2. Kiểm tra sản phẩm tồn tại trong DB ===
+      const codes = validProducts.map((p) => p.code);
+      const existingProducts = await this.getStore()
+        .product()
+        .find({ code: { $in: codes } });
+
+      const existingCodeMap = new Map(existingProducts.map((p) => [p.code, p._id]));
+
+      const missingCodes = codes.filter((code) => !existingCodeMap.has(code));
+      if (missingCodes.length > 0) {
+        missingCodes.forEach((code) => {
+          errors.push({ code, message: 'Sản phẩm không tồn tại trong hệ thống' });
+        });
+      }
+
+      const finalProducts = validProducts
+        .filter((p) => existingCodeMap.has(p.code))
+        .map((p) => ({
+          code: p.code,
+          price: p.price,
+          productId: existingCodeMap.get(p.code)!,
+        }));
+
+      let createdCount = 0;
+      const created: { code: string; price: number }[] = [];
+
+      if (finalProducts.length > 0) {
+        await this.getStore()
+          .productPriceProposal()
+          .bulkProductPriceProposalWithPrice(
+            userId,
+            finalProducts.map((p) => ({
+              code: p.code,
+              price: p.price,
+              productId: p.productId,
+            })),
+          );
+
+        createdCount = finalProducts.length;
+        created.push(...finalProducts.map((p) => ({ code: p.code, price: p.price })));
+      }
+
+      return {
+        success: createdCount,
+        failed: errors.length,
+        errors,
+        created,
+      };
+    } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
+      throw new AppError({
+        id: `${where}.bulkCreate`,
+        message: 'Tạo đề xuất giá hàng loạt thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error.message || error,
       });
     }
   }

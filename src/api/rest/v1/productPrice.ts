@@ -62,6 +62,17 @@ export function initProductPrice(api: API) {
     api.handler(handlers.bulkCreateProductPrice),
   );
   api.baseRoutes.productPrice.post(
+    '/bulk-create-by-code',
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+        permissions: [EPermission.WRITE_CUSTOM_PRICE],
+      }),
+    ),
+    api.handler(handlers.bulkCreateProductPriceWithCode),
+  );
+  api.baseRoutes.productPrice.post(
     '/sync-price/:userId',
     api.handler(authentication()),
     api.handler(

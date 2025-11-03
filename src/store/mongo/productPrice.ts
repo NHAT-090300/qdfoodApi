@@ -1,4 +1,10 @@
-import { ESortOrder, IProductPrice, IProductPriceFilter, IProductPriceProposal } from 'interface';
+import {
+  ESortOrder,
+  IPriceProposal,
+  IProductPrice,
+  IProductPriceFilter,
+  IProductPriceProposal,
+} from 'interface';
 import { isNumber } from 'lodash';
 import { ProductPrice } from 'model';
 import { ClientSession, Db, ObjectId } from 'mongodb';
@@ -180,6 +186,18 @@ export class MongoProductPrice extends BaseStore<IProductPrice> {
       userId: userObjectId,
       productId: new ObjectId(pro),
       customPrice: 0,
+    }));
+
+    return await this.collection.insertMany(docs);
+  }
+
+  async bulkProductPriceWithPrice(userId: string, products: IPriceProposal[]) {
+    const userObjectId = new ObjectId(userId);
+
+    const docs = products?.map((pro) => ({
+      userId: userObjectId,
+      productId: new ObjectId(pro?.productId),
+      customPrice: pro?.price,
     }));
 
     return await this.collection.insertMany(docs);

@@ -26,3 +26,9 @@ export interface IProductPriceProposalFilter {
   order?: ESortOrder;
   userId?: string;
 }
+
+export interface IPriceProposal {
+  productId: ObjectId;
+  price: number;
+  code?: string;
+}

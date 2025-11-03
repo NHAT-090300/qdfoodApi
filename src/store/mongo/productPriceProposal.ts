@@ -1,6 +1,7 @@
 import {
   ESortOrder,
   EStatusPriceProposal,
+  IPriceProposal,
   IProductPrice,
   IProductPriceProposal,
   IProductPriceProposalFilter,
@@ -188,6 +189,19 @@ export class MongoProductPriceProposal extends BaseStore<IProductPriceProposal> 
       userId: userObjectId,
       productId: new ObjectId(pro),
       customPrice: 0,
+      status: EStatusPriceProposal.PENDING,
+    }));
+
+    return await this.collection.insertMany(docs);
+  }
+
+  async bulkProductPriceProposalWithPrice(userId: string, products: IPriceProposal[]) {
+    const userObjectId = new ObjectId(userId);
+
+    const docs = products?.map((pro) => ({
+      userId: userObjectId,
+      productId: new ObjectId(pro?.productId),
+      customPrice: pro?.price,
       status: EStatusPriceProposal.PENDING,
     }));
 

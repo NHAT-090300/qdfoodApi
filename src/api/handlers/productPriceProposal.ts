@@ -55,6 +55,34 @@ export async function bulkCreateProductPriceProposal(
   }
 }
 
+export async function bulkCreateProductPriceProposalWithCode(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { userId, products } = req.body;
+
+    if (!ObjectId.isValid(userId) || !Array.isArray(products)) {
+      throw new AppError({
+        id: 'productPriceProposal.bulkCreateProductPriceProposal',
+        message: 'userId hoặc danh sách productId không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    await new ProductPriceProposalApp(ctx).bulkCreateProductPriceProposalWithPrice(
+      userId,
+      products,
+    );
+
+    res.json('ok');
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function upsertPriceProposals(
   ctx: Context,
   req: Request,

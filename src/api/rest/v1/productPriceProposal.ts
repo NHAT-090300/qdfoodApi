@@ -72,6 +72,17 @@ export function initProductPriceProposal(api: API) {
     ),
     api.handler(handlers.bulkCreateProductPriceProposal),
   );
+  api.baseRoutes.productPriceProposal.post(
+    '/bulk-create-by-code',
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+        permissions: [EPermission.WRITE_CUSTOM_PRICE],
+      }),
+    ),
+    api.handler(handlers.bulkCreateProductPriceProposalWithCode),
+  );
   api.baseRoutes.productPriceProposal.put(
     '/:id',
     api.handler(authentication()),
