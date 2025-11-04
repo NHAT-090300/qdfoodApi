@@ -182,25 +182,51 @@ export class MongoProductPrice extends BaseStore<IProductPrice> {
   async bulkProductPrice(userId: string, productIds: string[]) {
     const userObjectId = new ObjectId(userId);
 
-    const docs = productIds?.map((pro) => ({
-      userId: userObjectId,
-      productId: new ObjectId(pro),
-      customPrice: 0,
+    const bulkOps = productIds.map((productId) => ({
+      updateOne: {
+        filter: {
+          userId: userObjectId,
+          productId: new ObjectId(productId),
+        },
+        update: {
+          $set: {
+            customPrice: 0,
+            updatedAt: new Date(),
+          },
+          $setOnInsert: {
+            createdAt: new Date(),
+          },
+        },
+        upsert: true,
+      },
     }));
 
-    return await this.collection.insertMany(docs);
+    return await this.collection.bulkWrite(bulkOps, { ordered: false });
   }
 
   async bulkProductPriceWithPrice(userId: string, products: IPriceProposal[]) {
     const userObjectId = new ObjectId(userId);
 
-    const docs = products?.map((pro) => ({
-      userId: userObjectId,
-      productId: new ObjectId(pro?.productId),
-      customPrice: pro?.price,
+    const bulkOps = products.map((pro) => ({
+      updateOne: {
+        filter: {
+          userId: userObjectId,
+          productId: new ObjectId(pro.productId),
+        },
+        update: {
+          $set: {
+            customPrice: pro.price,
+            updatedAt: new Date(),
+          },
+          $setOnInsert: {
+            createdAt: new Date(),
+          },
+        },
+        upsert: true,
+      },
     }));
 
-    return await this.collection.insertMany(docs);
+    return await this.collection.bulkWrite(bulkOps, { ordered: false });
   }
 
   async syncPriceProposals(proposals: IProductPriceProposal[]) {

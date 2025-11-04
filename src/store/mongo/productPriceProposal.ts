@@ -185,27 +185,53 @@ export class MongoProductPriceProposal extends BaseStore<IProductPriceProposal> 
   async bulkProductPriceProposal(userId: string, productIds: string[]) {
     const userObjectId = new ObjectId(userId);
 
-    const docs = productIds?.map((pro) => ({
-      userId: userObjectId,
-      productId: new ObjectId(pro),
-      customPrice: 0,
-      status: EStatusPriceProposal.PENDING,
+    const bulkOps = productIds.map((productId) => ({
+      updateOne: {
+        filter: {
+          userId: userObjectId,
+          productId: new ObjectId(productId),
+        },
+        update: {
+          $set: {
+            customPrice: 0,
+            status: EStatusPriceProposal.PENDING,
+            updatedAt: new Date(),
+          },
+          $setOnInsert: {
+            createdAt: new Date(),
+          },
+        },
+        upsert: true,
+      },
     }));
 
-    return await this.collection.insertMany(docs);
+    return await this.collection.bulkWrite(bulkOps, { ordered: false });
   }
 
   async bulkProductPriceProposalWithPrice(userId: string, products: IPriceProposal[]) {
     const userObjectId = new ObjectId(userId);
 
-    const docs = products?.map((pro) => ({
-      userId: userObjectId,
-      productId: new ObjectId(pro?.productId),
-      customPrice: pro?.price,
-      status: EStatusPriceProposal.PENDING,
+    const bulkOps = products.map((pro) => ({
+      updateOne: {
+        filter: {
+          userId: userObjectId,
+          productId: new ObjectId(pro.productId),
+        },
+        update: {
+          $set: {
+            customPrice: pro.price,
+            status: EStatusPriceProposal.PENDING,
+            updatedAt: new Date(),
+          },
+          $setOnInsert: {
+            createdAt: new Date(),
+          },
+        },
+        upsert: true,
+      },
     }));
 
-    return await this.collection.insertMany(docs);
+    return await this.collection.bulkWrite(bulkOps, { ordered: false });
   }
 
   async upsertPriceProposals(userId: string, prices: IProductPrice[]) {
