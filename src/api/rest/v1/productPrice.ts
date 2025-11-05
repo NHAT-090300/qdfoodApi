@@ -5,6 +5,17 @@ import { EPermission, ERole } from 'interface';
 
 export function initProductPrice(api: API) {
   api.baseRoutes.productPrice.get(
+    '/export',
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+        permissions: [EPermission.WRITE_CUSTOM_PRICE],
+      }),
+    ),
+    api.handler(handlers.exportPriceList),
+  );
+  api.baseRoutes.productPrice.get(
     '/web-user',
     api.handler(authentication()),
     api.handler(handlers.getPaginate),

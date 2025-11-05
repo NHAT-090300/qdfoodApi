@@ -1,12 +1,12 @@
-import { NextFunction, Request, Response } from 'express';
-import { StatusCodes } from 'http-status-codes';
-
 import { Context } from 'api';
 import { ProductPriceApp } from 'app';
+import { NextFunction, Request, Response } from 'express';
+import { StatusCodes } from 'http-status-codes';
 import { IProductPriceFilter } from 'interface';
 import { AppError, ProductPrice } from 'model';
-import { isValidId, tryParseJson, validatePagination } from 'utils';
+import moment from 'moment';
 import { ObjectId } from 'mongodb';
+import { isValidId, tryParseJson, validatePagination } from 'utils';
 
 const where = 'Handlers.productPrice';
 
@@ -266,6 +266,54 @@ export async function deleteProductPrice(
     const result = await new ProductPriceApp(ctx).delete(id);
 
     res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function exportPriceList(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { userId, month } = req.query;
+
+    // === Validate userId ===
+    if (!userId || !ObjectId.isValid(userId as string)) {
+      throw new AppError({
+        id: `${where}.export`,
+        message: 'userId không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    // === Validate month ===
+    const monthNum = month ? Number(month) : moment().month() + 1;
+    if (Number.isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
+      throw new AppError({
+        id: `${where}.export`,
+        message: 'Tháng không hợp lệ (1-12)',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    // === Gọi service → nhận Buffer ===
+    const buffer = await new ProductPriceApp(ctx).exportPriceList(userId as string, monthNum);
+
+    // === Tên file ===
+    const fileName = `BangGia_Thang${monthNum.toString().padStart(2, '0')}_2025.xlsx`;
+
+    // === Gửi file ===
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', (buffer as any)?.length?.toString());
+
+    res.send(buffer);
   } catch (error) {
     next(error);
   }

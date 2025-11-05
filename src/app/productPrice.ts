@@ -1,8 +1,10 @@
+import ExcelJS from 'exceljs';
 import { StatusCodes } from 'http-status-codes';
-
 import { IProductPriceFilter } from 'interface';
 import { AppError, ProductPrice } from 'model';
+import moment from 'moment';
 import { ObjectId } from 'mongodb';
+
 import BaseApp from './base';
 
 const where = 'App.productPrice';
@@ -275,6 +277,201 @@ export class ProductPriceApp extends BaseApp {
         message: 'Cập nhật productPrice thất bại',
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         detail: error,
+      });
+    }
+  }
+
+  async exportPriceList(userId: string, month: number = moment().month() + 1) {
+    try {
+      const userObjectId = new ObjectId(userId);
+      const currentYear = moment().year();
+
+      const pipeline = [
+        // 1. LẤY TẤT CẢ SẢN PHẨM
+        {
+          $lookup: {
+            from: 'products',
+            pipeline: [], // Có thể thêm filter: { type: 'PRODUCT' }
+            as: 'product',
+          },
+        },
+        { $unwind: '$product' },
+
+        // 2. GIÁ HIỆN TẠI
+        {
+          $lookup: {
+            from: 'product_prices',
+            let: { pid: '$product._id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [{ $eq: ['$userId', userObjectId] }, { $eq: ['$productId', '$$pid'] }],
+                  },
+                },
+              },
+            ],
+            as: 'current',
+          },
+        },
+        { $unwind: { path: '$current', preserveNullAndEmptyArrays: true } },
+
+        // 3. GIÁ ĐỀ XUẤT
+        {
+          $lookup: {
+            from: 'product_price_proposals',
+            let: { pid: '$product._id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$userId', userObjectId] },
+                      { $eq: ['$productId', '$$pid'] },
+                      { $in: ['$status', ['PENDING', 'APPROVED']] },
+                    ],
+                  },
+                },
+              },
+              { $sort: { createdAt: -1 } },
+              { $limit: 1 },
+            ],
+            as: 'proposal',
+          },
+        },
+        { $unwind: { path: '$proposal', preserveNullAndEmptyArrays: true } },
+
+        // 4. PROJECT
+        {
+          $project: {
+            _id: 0,
+            name: '$product.name',
+            unit: { $ifNull: ['$product.unit', ''] },
+            currentPrice: { $ifNull: ['$current.customPrice', 0] },
+            proposalPrice: { $ifNull: ['$proposal.customPrice', 0] },
+          },
+        },
+        {
+          $match: {
+            name: { $nin: [null, ''] },
+          },
+        },
+      ];
+
+      const data = await this.getStore().product().aggregate(pipeline);
+
+      console.log('Export data count:', data.length);
+      if (data.length === 0) {
+        console.warn('Không có sản phẩm nào trong hệ thống');
+      }
+
+      // === TẠO EXCEL (giữ nguyên) ===
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet('Bảng giá', {
+        pageSetup: { paperSize: 9, orientation: 'landscape' },
+      });
+
+      // === HEADER CÔNG TY ===
+      const addHeaderRow = (text: string, bold = false, size?: number) => {
+        const row = sheet.addRow([text]);
+        row.font = { bold, size: size || 11 };
+        row.alignment = { vertical: 'middle' };
+        return row;
+      };
+
+      addHeaderRow('CÔNG TY TNHH QUANGDAFOOD', true);
+      addHeaderRow('116 Đô Đốc Lộc, Hòa Xuân, Cẩm Lệ, Đà Nẵng');
+      addHeaderRow('SĐT: 0905575527');
+      sheet.addRow([]);
+      addHeaderRow('BẢNG GIÁ HÀNG THỰC PHẨM', true, 14);
+      addHeaderRow(`ÁP DỤNG THÁNG ${month.toString().padStart(2, '0')}.${currentYear}`, true);
+      sheet.addRow([]);
+
+      // === TABLE HEADER ===
+      const prevMonth = month === 1 ? 12 : month - 1;
+      const headerRow = sheet.addRow([
+        'STT',
+        'TÊN NGUYÊN LIỆU',
+        'ĐVT',
+        'SỐ LƯỢNG',
+        `GIÁ HIỆN TẠI`,
+        `GIÁ ĐỀ XUẤT`,
+        'GHI CHÚ',
+      ]);
+
+      headerRow.eachCell((cell) => {
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF92D050' } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      });
+      headerRow.height = 35;
+
+      // === DATA ROWS ===
+      data.forEach((item: any, index: number) => {
+        const diff = item.proposalPrice - item.currentPrice;
+        let note = '-';
+        if (diff > 0) note = `Tăng ${diff.toLocaleString()}`;
+        else if (diff < 0) note = `Giảm ${Math.abs(diff).toLocaleString()}`;
+
+        const row = sheet.addRow([
+          index + 1,
+          item.name || '',
+          (item.unit || '').toUpperCase(),
+          1,
+          item.currentPrice,
+          item.proposalPrice,
+          note,
+        ]);
+
+        row.getCell(5).numFmt = '#,##0';
+        row.getCell(6).numFmt = '#,##0';
+
+        row.getCell(1).alignment = { horizontal: 'center' };
+        row.getCell(3).alignment = { horizontal: 'center' };
+        row.getCell(4).alignment = { horizontal: 'center' };
+        row.getCell(5).alignment = { horizontal: 'right' };
+        row.getCell(6).alignment = { horizontal: 'right' };
+        row.getCell(7).alignment = { horizontal: 'center' };
+
+        row.height = 25;
+      });
+
+      // === CỘT RỘNG + VIỀN ===
+      const borderStyle = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      } as const;
+
+      sheet.columns = [
+        { width: 6 },
+        { width: 35 },
+        { width: 8 },
+        { width: 12 },
+        { width: 18 },
+        { width: 18 },
+        { width: 20 },
+      ];
+
+      const startRow = 8;
+      const endRow = startRow + data.length;
+      for (let r = startRow; r <= endRow; r++) {
+        const row = sheet.getRow(r);
+        row.eachCell((cell: any) => {
+          cell.border = borderStyle;
+        });
+      }
+
+      // === TRẢ VỀ BUFFER ===
+      const buffer = await workbook.xlsx.writeBuffer();
+      return buffer;
+    } catch (error: any) {
+      throw new AppError({
+        id: 'PriceService.exportPriceList',
+        message: 'Xuất Excel thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error.message,
       });
     }
   }

@@ -258,11 +258,7 @@ export class MongoProductPriceProposal extends BaseStore<IProductPriceProposal> 
     }));
 
     const result = await this.collection.bulkWrite(bulkOps);
-    console.log({
-      matched: result.matchedCount,
-      modified: result.modifiedCount,
-      upserted: result.upsertedCount,
-    });
+
     return result;
   }
 }

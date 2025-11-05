@@ -1,5 +1,5 @@
 import { ESortOrder, IProduct, IProductFilter } from 'interface';
-import { isArray, isNumber } from 'lodash';
+import { isNumber } from 'lodash';
 import { logger } from 'logger';
 import { Product } from 'model';
 import { ClientSession, Db, ObjectId } from 'mongodb';
@@ -62,176 +62,209 @@ export class MongoProduct extends BaseStore<IProduct> {
   }
 
   private getQuery(filters: IProductFilter) {
-    const condition: Record<string, any> = {
-      parentId: null,
-    };
+    const condition: Record<string, any> = {};
     const sort: Record<string, -1 | 1> = {};
+    const orConditions: any[] = [];
 
     const paginate = {
       limit: 0,
       skip: 0,
-      page: 0,
+      page: 1,
       hasPaginate: false,
     };
 
+    // === 1. Keyword search (name, code, _id) ===
     if (filters.keyword) {
       const keyword = filters.keyword.trim();
+      const keywordConditions: any[] = [];
 
       if (ObjectId.isValid(keyword)) {
-        condition.$or = [{ _id: new ObjectId(keyword) }];
+        keywordConditions.push({ _id: new ObjectId(keyword) });
+      }
+
+      const regex = createUnsignedRegex(keyword);
+      keywordConditions.push({ name: { $regex: regex } });
+      keywordConditions.push({ code: { $regex: regex } });
+
+      if (keywordConditions.length === 1) {
+        Object.assign(condition, keywordConditions[0]);
       } else {
-        const regex = createUnsignedRegex(keyword);
-        condition.$or = [{ name: { $regex: regex } }, { code: { $regex: regex } }];
+        orConditions.push({ $or: keywordConditions });
       }
     }
 
-    if (filters?.type?.length && isArray(filters.type)) {
-      condition.type = {
-        $in: filters.type,
-      };
+    // === 2. Type filter ===
+    if (filters.type?.length && Array.isArray(filters.type)) {
+      condition.type = { $in: filters.type };
     }
 
+    // === 3. isShow ===
     if (typeof filters.isShow === 'boolean') {
       condition.isShow = filters.isShow;
     }
 
-    if (filters.ninProduct?.length && Array.isArray(filters?.ninProduct)) {
-      condition._id = {
-        $nin: filters.ninProduct.map((id) => (ObjectId.isValid(id) ? new ObjectId(id) : id)),
-      };
+    // === 4. Exclude products (ninProduct) ===
+    if (filters.ninProduct?.length && Array.isArray(filters.ninProduct)) {
+      const ninIds = filters.ninProduct
+        .filter((id): id is string => typeof id === 'string' && ObjectId.isValid(id))
+        .map((id) => new ObjectId(id));
+      if (ninIds.length) {
+        condition._id = { ...(condition._id || {}), $nin: ninIds };
+      }
     }
 
+    // === 5. Include specific IDs ===
+    if (filters.ids?.length && Array.isArray(filters.ids)) {
+      const inIds = filters.ids
+        .filter((id): id is string => typeof id === 'string' && ObjectId.isValid(id))
+        .map((id) => new ObjectId(id));
+      if (inIds.length) {
+        condition._id = { ...(condition._id || {}), $in: inIds };
+      }
+    }
+
+    // === 6. Price range (defaultPrice) ===
     if (isNumber(filters.minPrice) || isNumber(filters.maxPrice)) {
-      condition.price = {};
-      if (isNumber(filters.minPrice)) {
-        condition.price.$gte = filters.minPrice;
-      }
-      if (isNumber(filters.maxPrice)) {
-        condition.price.$lte = filters.maxPrice;
-      }
+      condition.defaultPrice = {};
+      if (isNumber(filters.minPrice)) condition.defaultPrice.$gte = filters.minPrice;
+      if (isNumber(filters.maxPrice)) condition.defaultPrice.$lte = filters.maxPrice;
     }
 
-    if (Array.isArray(filters.ids) && filters.ids.length) {
-      condition._id = {
-        $in: filters.ids.map((id) => (ObjectId.isValid(id) ? new ObjectId(id) : id)),
-      };
-    }
-
-    const orConditions = [];
-
+    // === 7. Category / SubCategory ===
     if (filters.categories?.length) {
-      orConditions.push({
-        categoryId: {
-          $in: filters.categories.map((id) => (ObjectId.isValid(id) ? new ObjectId(id) : id)),
-        },
-      });
+      const catIds = filters.categories
+        .filter((id): id is string => ObjectId.isValid(id))
+        .map((id) => new ObjectId(id));
+      if (catIds.length) {
+        orConditions.push({ categoryId: { $in: catIds } });
+      }
     }
 
     if (filters.subCategories?.length) {
-      orConditions.push({
-        subCategoryId: {
-          $in: filters.subCategories.map((id) => (ObjectId.isValid(id) ? new ObjectId(id) : id)),
-        },
-      });
+      const subCatIds = filters.subCategories
+        .filter((id): id is string => ObjectId.isValid(id))
+        .map((id) => new ObjectId(id));
+      if (subCatIds.length) {
+        orConditions.push({ subCategoryId: { $in: subCatIds } });
+      }
     }
 
-    if (orConditions.length) {
+    // === 8. Combine $or conditions ===
+    if (orConditions.length === 1) {
+      Object.assign(condition, orConditions[0]);
+    } else if (orConditions.length > 1) {
       condition.$or = orConditions;
     }
 
+    // === 9. Default sort ===
     if (filters.sort && filters.order) {
       sort[filters.sort] = filters.order === ESortOrder.Asc ? 1 : -1;
     } else {
-      sort.point = -1;
+      sort.createdAt = -1; // Mặc định mới nhất
     }
 
-    if (isNumber(filters.page) && isNumber(filters.limit)) {
-      paginate.skip = (filters.page - 1) * filters.limit;
-      paginate.limit = filters.limit;
-      paginate.page = filters.page;
-      paginate.hasPaginate = true;
-    }
+    // === 10. Pagination ===
+    const page = isNumber(filters.page) && filters.page >= 1 ? filters.page : 1;
+    const limit = isNumber(filters.limit) && filters.limit > 0 ? filters.limit : 20;
+
+    paginate.page = page;
+    paginate.limit = limit;
+    paginate.skip = (page - 1) * limit;
+    paginate.hasPaginate = true;
 
     return { condition, sort, paginate };
+  }
+
+  private buildProductPipeline(
+    condition: any,
+    sort: any,
+    paginate: any,
+    userId?: string,
+    includeCategory = true,
+    includePrice = true,
+  ) {
+    const pipeline: any[] = [{ $match: condition }];
+
+    if (Object.keys(sort).length) {
+      pipeline.push({ $sort: sort });
+    }
+
+    // Custom price
+    if (includePrice) {
+      if (userId) {
+        pipeline.push(
+          {
+            $lookup: {
+              from: 'product_prices',
+              let: { productId: '$_id' },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $eq: ['$productId', '$$productId'] },
+                        { $eq: ['$userId', new ObjectId(userId)] },
+                      ],
+                    },
+                  },
+                },
+                { $limit: 1 },
+              ],
+              as: 'customPriceData',
+            },
+          },
+          {
+            $addFields: {
+              finalPrice: {
+                $ifNull: [{ $arrayElemAt: ['$customPriceData.customPrice', 0] }, '$defaultPrice'],
+              },
+            },
+          },
+        );
+      } else {
+        pipeline.push({
+          $addFields: { finalPrice: '$defaultPrice' },
+        });
+      }
+    }
+
+    // Join category
+    if (includeCategory) {
+      pipeline.push(
+        {
+          $lookup: {
+            from: 'category',
+            localField: 'categoryId',
+            foreignField: '_id',
+            as: 'category',
+          },
+        },
+        {
+          $unwind: {
+            path: '$category',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+      );
+    }
+
+    // Project
+    pipeline.push({
+      $project: {
+        ...this.getProject(),
+        category: includeCategory ? { $ifNull: ['$category', {}] } : undefined,
+        finalPrice: includePrice ? 1 : undefined,
+      },
+    });
+
+    return pipeline;
   }
 
   async getListMoreByUser(filters: IProductFilter) {
     const { condition, sort, paginate } = this.getQuery(filters);
 
-    const pipeline: any[] = [{ $match: condition }];
+    const pipeline = this.buildProductPipeline(condition, sort, paginate, filters.userId);
 
-    pipeline.push({ $sort: sort || { 'category.name': 1 } });
-
-    // Nếu có userId thì thêm lookup để lấy giá theo user
-    if (filters?.userId) {
-      pipeline.push(
-        {
-          $lookup: {
-            from: 'product_prices',
-            let: { productId: '$_id' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [
-                      { $eq: ['$productId', '$$productId'] },
-                      { $eq: ['$userId', new ObjectId(filters.userId)] },
-                    ],
-                  },
-                },
-              },
-              { $limit: 1 },
-            ],
-            as: 'customPriceData',
-          },
-        },
-        {
-          $addFields: {
-            finalPrice: {
-              $cond: [
-                { $gt: [{ $size: '$customPriceData' }, 0] },
-                { $arrayElemAt: ['$customPriceData.customPrice', 0] },
-                '$defaultPrice',
-              ],
-            },
-          },
-        },
-      );
-    } else {
-      // Nếu không có userId thì lấy finalPrice = defaultPrice
-      pipeline.push({
-        $addFields: {
-          finalPrice: '$defaultPrice',
-        },
-      });
-    }
-
-    // Join category
-    pipeline.push(
-      {
-        $lookup: {
-          from: 'category',
-          localField: 'categoryId',
-          foreignField: '_id',
-          as: 'category',
-        },
-      },
-      {
-        $unwind: {
-          path: '$category',
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $project: {
-          ...this.getProject(),
-          category: { $ifNull: ['$category', {}] },
-          finalPrice: 1,
-        },
-      },
-    );
-
-    // Pagination
     pipeline.push({
       $facet: {
         data: [{ $skip: paginate.skip }, { $limit: paginate.limit }],
@@ -250,7 +283,7 @@ export class MongoProduct extends BaseStore<IProduct> {
       pagination: {
         limit: paginate.limit,
         page: paginate.page,
-        totalPages: Math.ceil(totalData / paginate.limit),
+        totalPages: paginate.limit > 0 ? Math.ceil(totalData / paginate.limit) : 1,
         totalItems: totalData,
       },
     };

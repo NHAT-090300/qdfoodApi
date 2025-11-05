@@ -31,9 +31,7 @@ export class BaseStore<T extends Document> {
     id: string | ObjectId,
     options: FindOptions<T> = {},
   ): Promise<Type | null> {
-    return this.collection.findOne<Type>({ _id: new ObjectId(id) } as Filter<T>, {
-      ...options,
-    });
+    return this.collection.findOne<Type>({ _id: new ObjectId(id) } as Filter<T>, options);
   }
 
   async find<Type extends object = T>(
@@ -79,8 +77,8 @@ export class BaseStore<T extends Document> {
       pipeline.push({ $project: projection });
     }
 
-    const [result] = await this.collection.aggregate<Type>(pipeline).toArray();
-    return result || null;
+    const result = await this.collection.aggregate<Type>(pipeline).toArray();
+    return result[0] || null;
   }
 
   async baseUpdate(
@@ -115,5 +113,13 @@ export class BaseStore<T extends Document> {
 
   async count(filters?: Filter<T>, options?: CountDocumentsOptions) {
     return await this.collection.countDocuments(filters, options);
+  }
+
+  async aggregate<R extends Document = Document>(pipeline: object[]): Promise<R[]> {
+    return this.collection.aggregate<R>(pipeline).toArray();
+  }
+
+  async aggregateOne<R extends Document = Document>(pipeline: object[]): Promise<R | null> {
+    return this.collection.aggregate<R>(pipeline).next();
   }
 }

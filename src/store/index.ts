@@ -25,6 +25,7 @@ import {
   MongoOtp,
   MongoSubCategory,
 } from './mongo';
+import { createAllIndexes } from './indexes';
 
 const DB_PING_ATTEMPTS = 5;
 const DB_PING_TIMEOUT_SECS = 10;
@@ -118,6 +119,10 @@ export default class MongoStore {
       this.stores.productLog = new MongoProductLog(this.db);
       this.stores.otp = new MongoOtp(this.db);
       this.stores.subCategory = new MongoSubCategory(this.db);
+      // TỰ ĐỘNG ĐÁNH INDEX
+      logger.info('Creating indexes...');
+      await createAllIndexes(this.db);
+      logger.info('Indexes created!');
     }
   };
 
