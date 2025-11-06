@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs';
 import { StatusCodes } from 'http-status-codes';
-import { IProductPriceFilter } from 'interface';
+import { EUnitDisplay, IProductPriceFilter } from 'interface';
 import { AppError, ProductPrice } from 'model';
 import moment from 'moment';
 import { ObjectId } from 'mongodb';
@@ -287,21 +287,14 @@ export class ProductPriceApp extends BaseApp {
       const currentYear = moment().year();
 
       const pipeline = [
-        // 1. LẤY TẤT CẢ SẢN PHẨM
-        {
-          $lookup: {
-            from: 'products',
-            pipeline: [], // Có thể thêm filter: { type: 'PRODUCT' }
-            as: 'product',
-          },
-        },
-        { $unwind: '$product' },
+        // 1. BẮT ĐẦU TỪ PRODUCTS (KHÔNG SELF-LOOKUP)
+        { $addFields: {} },
 
         // 2. GIÁ HIỆN TẠI
         {
           $lookup: {
             from: 'product_prices',
-            let: { pid: '$product._id' },
+            let: { pid: '$_id' },
             pipeline: [
               {
                 $match: {
@@ -320,16 +313,12 @@ export class ProductPriceApp extends BaseApp {
         {
           $lookup: {
             from: 'product_price_proposals',
-            let: { pid: '$product._id' },
+            let: { pid: '$_id' },
             pipeline: [
               {
                 $match: {
                   $expr: {
-                    $and: [
-                      { $eq: ['$userId', userObjectId] },
-                      { $eq: ['$productId', '$$pid'] },
-                      { $in: ['$status', ['PENDING', 'APPROVED']] },
-                    ],
+                    $and: [{ $eq: ['$userId', userObjectId] }, { $eq: ['$productId', '$$pid'] }],
                   },
                 },
               },
@@ -341,14 +330,22 @@ export class ProductPriceApp extends BaseApp {
         },
         { $unwind: { path: '$proposal', preserveNullAndEmptyArrays: true } },
 
-        // 4. PROJECT
+        // 4. CHỈ LẤY SP CÓ TRONG ÍT NHẤT 1 BẢNG (MERGE)
+        {
+          $match: {
+            $or: [{ current: { $ne: null } }, { proposal: { $ne: null } }],
+          },
+        },
+
+        // 5. PROJECT
         {
           $project: {
             _id: 0,
-            name: '$product.name',
-            unit: { $ifNull: ['$product.unit', ''] },
+            name: '$name',
+            unitName: { $ifNull: ['$unitName', null] },
             currentPrice: { $ifNull: ['$current.customPrice', 0] },
             proposalPrice: { $ifNull: ['$proposal.customPrice', 0] },
+            code: { $ifNull: ['$code', ''] },
           },
         },
         {
@@ -360,7 +357,6 @@ export class ProductPriceApp extends BaseApp {
 
       const data = await this.getStore().product().aggregate(pipeline);
 
-      console.log('Export data count:', data.length);
       if (data.length === 0) {
         console.warn('Không có sản phẩm nào trong hệ thống');
       }
@@ -374,23 +370,23 @@ export class ProductPriceApp extends BaseApp {
       // === HEADER CÔNG TY ===
       const addHeaderRow = (text: string, bold = false, size?: number) => {
         const row = sheet.addRow([text]);
-        row.font = { bold, size: size || 11 };
+        row.font = { name: 'Times New Roman', bold, size: size || 11 };
         row.alignment = { vertical: 'middle' };
         return row;
       };
 
-      addHeaderRow('CÔNG TY TNHH QUANGDAFOOD', true);
-      addHeaderRow('116 Đô Đốc Lộc, Hòa Xuân, Cẩm Lệ, Đà Nẵng');
-      addHeaderRow('SĐT: 0905575527');
+      addHeaderRow('CÔNG TY TNHH QUANGDAFOOD', true, 16);
+      addHeaderRow('116 Đô Đốc Lộc, Hòa Xuân, Cẩm Lệ, Đà Nẵng', false, 12);
+      addHeaderRow('SĐT: 0905575527', false, 12);
       sheet.addRow([]);
-      addHeaderRow('BẢNG GIÁ HÀNG THỰC PHẨM', true, 14);
-      addHeaderRow(`ÁP DỤNG THÁNG ${month.toString().padStart(2, '0')}.${currentYear}`, true);
+      addHeaderRow('BẢNG GIÁ HÀNG THỰC PHẨM', true, 16);
+      addHeaderRow(`ÁP DỤNG THÁNG ${month.toString().padStart(2, '0')}.${currentYear}`, false, 12);
       sheet.addRow([]);
 
       // === TABLE HEADER ===
-      const prevMonth = month === 1 ? 12 : month - 1;
       const headerRow = sheet.addRow([
         'STT',
+        'MÃ SẢN PHẨM',
         'TÊN NGUYÊN LIỆU',
         'ĐVT',
         'SỐ LƯỢNG',
@@ -400,7 +396,7 @@ export class ProductPriceApp extends BaseApp {
       ]);
 
       headerRow.eachCell((cell) => {
-        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.font = { name: 'Times New Roman', bold: true, color: { argb: '000000' }, size: 13 };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF92D050' } };
         cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
       });
@@ -408,29 +404,36 @@ export class ProductPriceApp extends BaseApp {
 
       // === DATA ROWS ===
       data.forEach((item: any, index: number) => {
-        const diff = item.proposalPrice - item.currentPrice;
+        const hasCurrent = typeof item.currentPrice === 'number' && item.currentPrice > 0;
+        const hasProposal = typeof item.proposalPrice === 'number' && item.proposalPrice > 0;
+        const diff = hasCurrent && hasProposal ? item.proposalPrice - item.currentPrice : 0;
         let note = '-';
-        if (diff > 0) note = `Tăng ${diff.toLocaleString()}`;
-        else if (diff < 0) note = `Giảm ${Math.abs(diff).toLocaleString()}`;
+        if (hasCurrent && hasProposal) {
+          if (diff > 0) note = `Tăng ${diff.toLocaleString()}`;
+          else if (diff < 0) note = `Giảm ${Math.abs(diff).toLocaleString()}`;
+        }
 
         const row = sheet.addRow([
           index + 1,
+          item.code || '',
           item.name || '',
-          (item.unit || '').toUpperCase(),
+          (EUnitDisplay as any)?.[item.unitName] || '',
           1,
           item.currentPrice,
           item.proposalPrice,
           note,
         ]);
+        row.font = { name: 'Times New Roman', size: 13 };
 
         row.getCell(5).numFmt = '#,##0';
         row.getCell(6).numFmt = '#,##0';
 
         row.getCell(1).alignment = { horizontal: 'center' };
+        row.getCell(2).alignment = { horizontal: 'center' };
         row.getCell(3).alignment = { horizontal: 'center' };
         row.getCell(4).alignment = { horizontal: 'center' };
-        row.getCell(5).alignment = { horizontal: 'right' };
-        row.getCell(6).alignment = { horizontal: 'right' };
+        row.getCell(5).alignment = { horizontal: 'center' };
+        row.getCell(6).alignment = { horizontal: 'center' };
         row.getCell(7).alignment = { horizontal: 'center' };
 
         row.height = 25;
@@ -446,9 +449,10 @@ export class ProductPriceApp extends BaseApp {
 
       sheet.columns = [
         { width: 6 },
+        { width: 18 },
         { width: 35 },
         { width: 8 },
-        { width: 12 },
+        { width: 18 },
         { width: 18 },
         { width: 18 },
         { width: 20 },
