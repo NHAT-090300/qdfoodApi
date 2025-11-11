@@ -30,4 +30,5 @@ jobs:
             --restart always \
             --env-file /root/project/env/api/.env \
             --network=npm-network \
+            --add-host host.docker.internal:host-gateway \
             nhatnguyen0903/qdfood-api:latest
