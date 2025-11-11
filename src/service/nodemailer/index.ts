@@ -19,6 +19,9 @@ class MailerService {
       },
       debug: true,
       logger: true,
+      tls: {
+        rejectUnauthorized: false,
+      },
     });
   }
 
