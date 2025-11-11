@@ -12,11 +12,13 @@ class MailerService {
     this.transporter = nodemailer.createTransport({
       host: config.nodemailer.host,
       port: config.nodemailer.port,
-      secure: true,
+      secure: config.nodemailer.secure,
       auth: {
         user: config.nodemailer.emailUser,
         pass: config.nodemailer.emailPass,
       },
+      debug: true,
+      logger: true,
     });
   }
 
