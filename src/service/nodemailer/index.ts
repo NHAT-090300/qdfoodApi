@@ -16,7 +16,7 @@ class MailerService {
       requireTLS: true,
       auth: {
         user: 'nhatnguyen.090300@gmail.com',
-        pass: 'lpkjbsjfrkbyqfki',
+        pass: 'lpkj bsjf rkby qfki',
       },
       debug: true,
       logger: true,
