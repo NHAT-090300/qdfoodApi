@@ -51,6 +51,14 @@ export interface IS3Config {
   folderCode: string;
 }
 
+export interface INodemailerConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  emailUser: string;
+  emailPass: string;
+}
+
 export interface IConfig {
   serviceSettings: IServiceSettings;
   mongoSettings: IMongoSettings;
@@ -60,4 +68,5 @@ export interface IConfig {
   jwtSettings: IJwtSettings;
   directus: IDirectusSettings;
   s3: IS3Config;
+  nodemailer: INodemailerConfig;
 }

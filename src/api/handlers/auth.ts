@@ -8,6 +8,7 @@ import { AppError, Otp, User } from 'model';
 import { generateJWT, validateEmail, verifyAccessToken } from 'utils';
 import { OtpApp } from 'app/otp';
 import { ERole } from 'interface';
+import { mailerService } from 'service/nodemailer';
 
 const where = 'Handlers.auth';
 
@@ -187,7 +188,7 @@ export async function register(
     const hashPassword = await hash(data?.password, 12);
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
-    await ctx.services.mailer.sendOtpEmail({
+    await mailerService.sendOtpEmail({
       toEmail: data?.email,
       otp,
     });
@@ -241,7 +242,7 @@ export async function resendOtp(
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
-    await ctx.services.mailer.sendOtpEmail({
+    await mailerService.sendOtpEmail({
       toEmail: email,
       otp,
     });
@@ -493,7 +494,7 @@ export async function resetPassword(
       email: otpPending?.email,
     });
 
-    await ctx.services.mailer.resetPassword({
+    await mailerService.resetPassword({
       toEmail: email,
     });
 

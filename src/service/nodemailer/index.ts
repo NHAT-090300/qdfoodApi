@@ -2,25 +2,26 @@
 import { StatusCodes } from 'http-status-codes';
 import { AppError } from 'model';
 import nodemailer from 'nodemailer';
+import { config } from 'config';
 
-export class MailerService {
+class MailerService {
   private transporter: any;
 
   constructor() {
     this.transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: 465,
+      host: config.nodemailer.host,
+      port: config.nodemailer.port,
       secure: true,
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: config.nodemailer.emailUser,
+        pass: config.nodemailer.emailPass,
       },
     });
   }
 
   async sendOtpEmail({ toEmail, otp }: { toEmail: string; otp: string }) {
     const mailOptions = {
-      from: `"OTP Verification" <${process.env.EMAIL_USER}>`,
+      from: `"OTP Verification" <${config.nodemailer.emailUser}>`,
       to: toEmail,
       subject: 'Your OTP Code',
       html: `<p>Your OTP code is: <b>${otp}</b></p><p>This code will expire in 15 minutes.</p>`,
@@ -40,7 +41,7 @@ export class MailerService {
 
   async resetPassword({ toEmail }: { toEmail: string }) {
     const mailOptions = {
-      from: `"Security Notification" <${process.env.EMAIL_USER}>`,
+      from: `"Security Notification" <${config.nodemailer.emailUser}>`,
       to: toEmail,
       subject: 'Your password has been changed',
       html: `
@@ -67,3 +68,5 @@ export class MailerService {
     }
   }
 }
+
+export const mailerService = new MailerService();

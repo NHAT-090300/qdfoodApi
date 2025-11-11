@@ -45,4 +45,11 @@ export const config: IConfig = {
   jwtSettings: {
     jwtSecret: process.env.JWT_SECRETS || '',
   },
+  nodemailer: {
+    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.EMAIL_PORT || '465', 10),
+    secure: process.env.EMAIL_SECURE === 'true',
+    emailUser: process.env.EMAIL_USER || 'nhatnguyen.090300@gmail.com',
+    emailPass: process.env.EMAIL_PASS || 'lpkjbsjfrkbyqfki',
+  },
 };
