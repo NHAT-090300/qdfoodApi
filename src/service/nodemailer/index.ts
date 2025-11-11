@@ -10,18 +10,16 @@ class MailerService {
 
   constructor() {
     this.transporter = nodemailer.createTransport({
-      host: config.nodemailer.host,
-      port: config.nodemailer.port,
-      secure: config.nodemailer.secure,
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      requireTLS: true,
       auth: {
-        user: config.nodemailer.emailUser,
-        pass: config.nodemailer.emailPass,
+        user: 'nhatnguyen.090300@gmail.com',
+        pass: 'lpkjbsjfrkbyqfki',
       },
       debug: true,
       logger: true,
-      tls: {
-        rejectUnauthorized: false,
-      },
     });
   }
 
