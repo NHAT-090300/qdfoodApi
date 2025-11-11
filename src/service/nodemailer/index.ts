@@ -6,6 +6,7 @@ import { config } from 'config';
 
 class MailerService {
   private transporter: any;
+  private static instance: MailerService;
 
   constructor() {
     this.transporter = nodemailer.createTransport({
@@ -17,6 +18,13 @@ class MailerService {
         pass: config.nodemailer.emailPass,
       },
     });
+  }
+
+  static getInstance() {
+    if (!this.instance) {
+      this.instance = new MailerService();
+    }
+    return this.instance;
   }
 
   async sendOtpEmail({ toEmail, otp }: { toEmail: string; otp: string }) {
@@ -69,4 +77,4 @@ class MailerService {
   }
 }
 
-export const mailerService = new MailerService();
+export const mailerService = MailerService.getInstance();
