@@ -396,7 +396,7 @@ export async function forgotPassword(
     }
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
-    await ctx.services.mailer.sendOtpEmail({
+    await mailerService.sendOtpEmail({
       toEmail: email,
       otp,
     });
