@@ -20,6 +20,7 @@ class MailerService {
       },
       tls: {
         servername: 'smtp.gmail.com',
+        rejectUnauthorized: false,
       },
       connectionTimeout: 60000,
       socketTimeout: 60000,
