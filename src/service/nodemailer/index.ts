@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 import { AppError } from 'model';
 import nodemailer from 'nodemailer';
 import { config } from 'config';
+import os from 'os';
 
 class MailerService {
   private transporter: any;
@@ -18,6 +19,7 @@ class MailerService {
         user: 'nhatnguyen.090300@gmail.com',
         pass: 'lpkj bsjf rkby qfki',
       },
+      name: os.hostname(),
       debug: true,
       logger: true,
     });
