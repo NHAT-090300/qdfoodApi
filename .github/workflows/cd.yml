@@ -22,8 +22,18 @@ jobs:
       - name: Delete old Docker container
         run: sudo docker rm -f qdfood-api-container || true
 
-      - name: Run Docker container
+      - name: Ensure npm-network exists
         run: |
+          if ! sudo docker network inspect npm-network >/dev/null 2>&1; then
+            sudo docker network create npm-network || true
+          fi
+
+      - name: Run Docker container (attach bridge for outbound)
+        run: |
+          # remove old container if exists
+          sudo docker rm -f qdfood-api-container || true
+
+          # run the container attached to npm-network (for internal service discovery)
           sudo docker run -d \
             --name qdfood-api-container \
             -p 8000:8000 \
@@ -31,5 +41,29 @@ jobs:
             --env-file /root/project/env/api/.env \
             --network=npm-network \
             --dns 8.8.8.8 \
+            --env NODE_OPTIONS="--dns-result-order=ipv4first" \
+            --env NO_PROXY=smtp.gmail.com,localhost,127.0.0.1 \
+            --env HTTP_PROXY= \
+            --env HTTPS_PROXY= \
+            --add-host host.docker.internal:host-gateway \
+            --sysctl net.ipv6.conf.all.disable_ipv6=1 \
+            --sysctl net.ipv6.conf.default.disable_ipv6=1 \
             --hostname=qdfood-api-host \
             nhatnguyen0903/qdfood-api:latest
+
+          # connect the container to bridge network so it has NAT outbound to internet
+          sudo docker network connect bridge qdfood-api-container || true
+
+      - name: Quick connectivity test (DNS + TCP + SSL) from inside container
+        run: |
+          echo "== DNS resolution inside container =="
+          sudo docker exec qdfood-api-container sh -c "command -v nslookup >/dev/null 2>&1 && nslookup smtp.gmail.com || (command -v dig >/dev/null 2>&1 && dig +short smtp.gmail.com) || getent hosts smtp.gmail.com || true"
+
+          echo "== TCP connect to 465 (SMTPS) =="
+          sudo docker exec qdfood-api-container sh -c "command -v nc >/dev/null 2>&1 || (apt-get update >/dev/null 2>&1; apt-get install -y netcat >/dev/null 2>&1) || true; nc -vz smtp.gmail.com 465 || true"
+
+          echo "== TCP connect to 587 (STARTTLS) =="
+          sudo docker exec qdfood-api-container sh -c "nc -vz smtp.gmail.com 587 || true"
+
+          echo "== OpenSSL handshake to 465 =="
+          sudo docker exec qdfood-api-container sh -c "command -v openssl >/dev/null 2>&1 || (apt-get update >/dev/null 2>&1; apt-get install -y openssl >/dev/null 2>&1) || true; openssl s_client -connect smtp.gmail.com:465 -brief -servername smtp.gmail.com < /dev/null || true"
