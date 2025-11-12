@@ -1,9 +1,9 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
+import { config } from 'config';
 import { StatusCodes } from 'http-status-codes';
 import { AppError } from 'model';
 import nodemailer from 'nodemailer';
-import { config } from 'config';
-import os from 'os';
+import SMTPTransport from 'nodemailer/lib/smtp-transport';
 
 class MailerService {
   private transporter: any;
@@ -19,14 +19,14 @@ class MailerService {
         pass: 'lpkj bsjf rkby qfki',
       },
       tls: {
-        servername: 'smtp.gmail.com',
         rejectUnauthorized: false,
       },
-      connectionTimeout: 60000,
-      socketTimeout: 60000,
+      connectionTimeout: 120000,
+      socketTimeout: 120000,
       debug: true,
       logger: true,
-    });
+      family: 4,
+    } as SMTPTransport.Options);
   }
 
   static getInstance() {
