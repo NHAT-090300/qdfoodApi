@@ -64,7 +64,9 @@ export class OtpApp extends BaseApp {
 
   async getOne(filter: { email?: string; isVerified?: boolean; type?: ETypeOtp }) {
     try {
-      const data = await this.getStore().otp().findOne(filter);
+      const data = await this.getStore()
+        .otp()
+        .findOne(filter, {}, { sort: { createdAt: -1 } });
 
       return data;
     } catch (error: any) {

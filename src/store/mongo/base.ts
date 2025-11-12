@@ -45,8 +45,9 @@ export class BaseStore<T extends Document> {
   async findOne<Type extends object = T>(
     filters: Filter<T>,
     projection: Partial<Record<keyof Type, any>> = {},
+    options: FindOptions<T> = {},
   ): Promise<Type | null> {
-    return this.collection.findOne<Type>(filters, { projection });
+    return this.collection.findOne<Type>(filters, { projection, ...options });
   }
 
   async findOnePopulate<Type extends object = T>(
