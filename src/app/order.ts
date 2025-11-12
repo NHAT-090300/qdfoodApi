@@ -396,7 +396,13 @@ export class OrderApp extends BaseApp {
     }
 
     for (const [i, order] of orders.entries()) {
-      const sheetName = `PXK_${i + 1}`;
+      const numberOrder = await this.getStore()
+        .order()
+        .count({
+          _id: { $lt: new ObjectId(order._id) },
+        });
+
+      const sheetName = `PXK_${numberOrder + 1}`;
       const worksheet = workbook.addWorksheet(sheetName);
 
       // Company Info
@@ -420,7 +426,8 @@ export class OrderApp extends BaseApp {
       styleCell(worksheet.getCell('A5'), { size: 13, align: 'center' });
 
       worksheet.mergeCells('F5:G5');
-      worksheet.getCell('F5').value = `PXK: ${order._id}`;
+      worksheet.getCell('F5').value =
+        `PXK: ${new Date().getDate()}${new Date().getMonth() + 1}${new Date().getFullYear()}${numberOrder + 1}`;
       styleCell(worksheet.getCell('F5'), { bold: true, size: 13, align: 'right' });
 
       // Thông tin nhận hàng
@@ -850,6 +857,13 @@ export class OrderApp extends BaseApp {
 
     // Lấy order từ DB
     const order = await this.getStore().order().getOne(orderId);
+
+    const numberOrder = await this.getStore()
+      .order()
+      .count({
+        _id: { $lt: new ObjectId(orderId) },
+      });
+
     if (!order) throw new Error('Order not found');
 
     // Company Info
@@ -873,7 +887,8 @@ export class OrderApp extends BaseApp {
     styleCell(worksheet.getCell('A5'), { size: 13, align: 'center' });
 
     worksheet.mergeCells('F5:G5');
-    worksheet.getCell('F5').value = `PXK: ${orderId}`;
+    worksheet.getCell('F5').value =
+      `PXK: ${new Date().getDate()}${new Date().getMonth() + 1}${new Date().getFullYear()}${numberOrder + 1}`;
     styleCell(worksheet.getCell('F5'), { bold: true, size: 13, align: 'right' });
 
     // Thông tin nhận hàng
