@@ -11,7 +11,7 @@ const where = 'App.productLog';
 export class ProductLogApp extends BaseApp {
   async create(data: ProductLog & { userName: string }) {
     try {
-      const result = await this.getStore().productLog().createOne(data);
+      const result = await this.getStore().productLog().createOne(new ProductLog(data));
 
       const inventoryApp = this.getStore().inventory();
       const inventoryAppTransaction = this.getStore().inventoryTransaction();
@@ -116,6 +116,7 @@ export class ProductLogApp extends BaseApp {
 
       return result;
     } catch (error: any) {
+      console.log(error);
       if (error instanceof AppError) throw error;
 
       throw new AppError({
