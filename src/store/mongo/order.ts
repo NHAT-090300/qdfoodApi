@@ -870,4 +870,98 @@ export class MongoOrder extends BaseStore<IOrder> {
       ])
       .toArray();
   }
+  async getRevenueStatsPaginate(filters: IOrderFilter) {
+    const { paginate } = this.getQuery(filters);
+    const filterYear = filters.year ? Number(filters.year) : null;
+
+    const matchStage: Record<string, any> = {
+      status: { $in: [EOrderStatus.DEBT, EOrderStatus.PAID, EOrderStatus.COMPLETED] },
+      userId: new ObjectId(filters.userId),
+    };
+
+    if (filterYear) {
+      matchStage.createdAt = {
+        $gte: new Date(`${filterYear}-01-01T00:00:00.000Z`),
+        $lt: new Date(`${filterYear + 1}-01-01T00:00:00.000Z`),
+      };
+    }
+
+    const pipeline: any[] = [
+      { $match: matchStage },
+      {
+        $addFields: {
+          year: { $year: '$createdAt' },
+          month: { $month: '$createdAt' },
+        },
+      },
+      {
+        $group: {
+          _id: { year: '$year', month: '$month' }, // gom theo tháng
+          totalOrderAmount: { $sum: '$total' },
+          totalOrders: { $sum: 1 },
+          totalDebtAmount: {
+            $sum: '$unpaidAmount',
+          },
+          totalPaidAmount: {
+            $sum: { $subtract: ['$total', '$unpaidAmount'] },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          year: '$_id.year',
+          month: '$_id.month',
+          totalOrderAmount: 1,
+          totalDebtAmount: 1,
+          totalPaidAmount: 1,
+          totalOrders: 1,
+        },
+      },
+      { $sort: { year: -1, month: -1 } },
+      {
+        $facet: {
+          data: [
+            { $skip: Math.max((paginate.page - 1) * paginate.limit, 0) },
+            { $limit: Math.max(paginate.limit, 1) },
+          ],
+          pageInfo: [{ $count: 'count' }],
+        },
+      },
+    ];
+
+    const result = await this.collection
+      .aggregate<{ data: any[]; pageInfo: Array<{ count: number }> }>(pipeline)
+      .next();
+
+    const data = result?.data ?? [];
+    const totalItems = result?.pageInfo?.[0]?.count ?? 0;
+
+    const totals = data.reduce(
+      (acc, cur) => {
+        acc.totalOrderAmount += cur.totalOrderAmount;
+        acc.totalDebtAmount += cur.totalDebtAmount;
+        acc.totalPaidAmount += cur.totalPaidAmount;
+        acc.totalOrders += cur.totalOrders;
+        return acc;
+      },
+      {
+        totalOrderAmount: 0,
+        totalDebtAmount: 0,
+        totalPaidAmount: 0,
+        totalOrders: 0,
+      },
+    );
+
+    return {
+      data,
+      totals,
+      totalItems,
+      pagination: {
+        page: paginate.page,
+        limit: paginate.limit,
+        totalPages: Math.ceil(totalItems / paginate.limit),
+      },
+    };
+  }
 }

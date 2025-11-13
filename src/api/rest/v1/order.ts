@@ -22,6 +22,17 @@ export function initOrder(api: API) {
   );
 
   api.baseRoutes.order.get(
+    '/revenue-stats/:clientId',
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+      }),
+    ),
+    api.handler(handlers.getRevenueStatsPaginate),
+  );
+
+  api.baseRoutes.order.get(
     '/user-debt/list',
     api.handler(authentication()),
     api.handler(

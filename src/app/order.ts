@@ -16,6 +16,21 @@ import BaseApp from './base';
 const where = 'App.order';
 
 export class OrderApp extends BaseApp {
+  async getRevenueStatsPaginate(filters: IOrderFilter) {
+    try {
+      return await this.getStore().order().getRevenueStatsPaginate(filters);
+    } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
+      throw new AppError({
+        id: `${where}.getCountByStatuses`,
+        message: 'Lấy danh sách order thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+
   async getCountByStatuses(filters: IOrderFilter) {
     try {
       return await this.getStore().order().getCountByStatuses(filters);
@@ -227,7 +242,7 @@ export class OrderApp extends BaseApp {
   async updateStatus(
     orderId: string,
     data: {
-      userId: string;
+      actionUserId: string;
       status: EOrderStatus;
       reason?: string;
       paymentVerifierId?: string;
@@ -255,7 +270,7 @@ export class OrderApp extends BaseApp {
             quantity: item.quantity,
             orderId: order._id,
             price: item.price,
-            userId: new ObjectId(data.userId),
+            userId: new ObjectId(data.actionUserId),
             refundAmount: round(item.price * item.quantity, 2),
             note: `Xuất kho tạo khi đơn hàng ${order._id?.toString()}`,
           });
@@ -298,6 +313,7 @@ export class OrderApp extends BaseApp {
       }
 
       delete updateData.paymentAmount;
+      delete updateData.userId;
 
       await this.getStore()
         .order()

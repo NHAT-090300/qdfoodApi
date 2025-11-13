@@ -81,7 +81,7 @@ export class Server {
 
     if (error && error instanceof model.AppError) {
       res.status(error.statusCode);
-      error.translate(req.headers['accept-language'] === 'en' ? 'en' : 'vi');
+      // error.translate(req.headers['accept-language'] === 'en' ? 'en' : 'vi');
       return res.json(error);
     }
 

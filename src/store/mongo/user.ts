@@ -130,7 +130,12 @@ export class MongoUser extends BaseStore<IUser> {
             from: 'orders',
             let: { uid: '$_id' },
             pipeline: [
-              { $match: { $expr: { $eq: ['$userId', '$$uid'] }, status: EOrderStatus.DEBT } },
+              {
+                $match: {
+                  $expr: { $eq: ['$userId', '$$uid'] },
+                  status: { $in: [EOrderStatus.DEBT, EOrderStatus.PAID, EOrderStatus.COMPLETED] },
+                },
+              },
               {
                 $group: {
                   _id: null,

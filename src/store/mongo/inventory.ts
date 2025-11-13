@@ -269,28 +269,43 @@ export class MongoInventory extends BaseStore<IInventory> {
   async updateInventoryFromOrder(order: IOrder) {
     if (!Array.isArray(order.items)) return;
 
+    const bulkOps = [];
+
     for (const item of order.items) {
-      const productId = new ObjectId(item.productId);
+      if (item.quantity > 0) {
+        const productId = new ObjectId(item.productId);
 
-      const inventory = await this.collection.findOne({ productId });
+        const inventory = await this.collection.findOne({ productId });
 
-      if (!inventory) {
-        throw new AppError({
-          id: `${where}.updateInventoryFromOrder`,
-          message: `Không tìm thấy hàng tồn kho cho productId: ${item.productId}`,
-          statusCode: StatusCodes.BAD_REQUEST,
+        if (!inventory) {
+          throw new AppError({
+            id: `${where}.updateInventoryFromOrder`,
+            message: `Không tìm thấy hàng tồn kho cho productId: ${item.productId}`,
+            statusCode: StatusCodes.BAD_REQUEST,
+          });
+        }
+
+        if (inventory.quantity < item.quantity) {
+          throw new AppError({
+            id: `${where}.updateInventoryFromOrder`,
+            message: `Không đủ hàng tồn kho cho productId: ${item.productId}`,
+            statusCode: StatusCodes.BAD_REQUEST,
+          });
+        }
+
+        // Gom các thao tác update lại
+        bulkOps.push({
+          updateOne: {
+            filter: { productId },
+            update: { $inc: { quantity: -item.quantity } },
+          },
         });
       }
+    }
 
-      if (inventory.quantity < item.quantity) {
-        throw new AppError({
-          id: `${where}.updateInventoryFromOrder`,
-          message: `Không đủ hàng tồn kho cho productId: ${item.productId}`,
-          statusCode: StatusCodes.BAD_REQUEST,
-        });
-      }
-
-      await this.collection.updateOne({ productId }, { $inc: { quantity: -item.quantity } });
+    // Thực hiện tất cả update trong 1 lần
+    if (bulkOps.length > 0) {
+      await this.collection.bulkWrite(bulkOps);
     }
   }
 }

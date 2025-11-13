@@ -35,6 +35,44 @@ export async function getSummary(
   }
 }
 
+export async function getRevenueStatsPaginate(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { clientId } = req.params;
+    const { limit = 10, page = 1, order, sort } = req.query;
+    const filterObject = tryParseJson(req.query.filters);
+
+    if (!isValidId(clientId)) {
+      throw new AppError({
+        id: `${where}.getRevenueStatsPaginate`,
+        message: 'clientId không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+    const filters: IOrderFilter = {
+      ...filterObject,
+      limit: Number(limit),
+      page: Number(page),
+      order,
+      sort,
+    };
+
+    validatePagination(filters.page, filters.limit);
+
+    const result = await new OrderApp(ctx).getRevenueStatsPaginate({
+      ...filters,
+      userId: clientId,
+    });
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function createOrderUser(
   ctx: Context,
   req: Request,
@@ -403,7 +441,7 @@ export async function updateStatusOrder(
 
     await new OrderApp(ctx).updateStatus(id, {
       ...req.body,
-      userId,
+      actionUserId: userId,
     });
 
     res.json('ok');
