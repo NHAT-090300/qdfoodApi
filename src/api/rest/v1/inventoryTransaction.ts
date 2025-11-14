@@ -37,6 +37,28 @@ export function initInventorytransaction(api: API) {
   );
 
   api.baseRoutes.inventoryTransaction.get(
+    '/money-stats',
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+      }),
+    ),
+    api.handler(handlers.getInventoryMoneyStats),
+  );
+
+  api.baseRoutes.inventoryTransaction.get(
+    '/shortage-by-month',
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+      }),
+    ),
+    api.handler(handlers.getInventoryShortageByMonth),
+  );
+
+  api.baseRoutes.inventoryTransaction.get(
     '/:id',
     api.handler(authentication()),
     api.handler(

@@ -187,3 +187,58 @@ export async function exportInventoryTransactionsToExcel(
     next(err);
   }
 }
+
+export async function getInventoryMoneyStats(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { page = 1, limit = 10, order, sort, keyword } = req.query;
+    const filterObject = tryParseJson(req.query.filters);
+
+    const filters: IInventoryTransactionFilter = {
+      ...filterObject,
+      page: Number(page),
+      limit: Number(limit),
+      order,
+      sort,
+      keyword,
+    };
+
+    validatePagination(filters.page, filters.limit);
+
+    const result = await new InventoryTransactionApp(ctx).getInventoryMoneyStatsAll(filters);
+
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getInventoryShortageByMonth(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const filterObject = tryParseJson(req.query.filters);
+
+    const filters: IInventoryTransactionFilter = {
+      ...filterObject,
+      page: Number(page),
+      limit: Number(limit),
+    };
+
+    validatePagination(filters.page, filters.limit);
+
+    const result = await new InventoryTransactionApp(ctx).getInventoryShortageByMonth(filters);
+
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}

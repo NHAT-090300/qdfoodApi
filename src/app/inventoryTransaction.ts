@@ -226,4 +226,40 @@ export class InventoryTransactionApp extends BaseApp {
       });
     }
   }
+  async getInventoryMoneyStatsAll(filters: IInventoryTransactionFilter) {
+    try {
+      const result = await this.getStore()
+        .inventoryTransaction()
+        .getMoneyStatsByMonthAllYears(filters);
+
+      return result;
+    } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
+      throw new AppError({
+        id: `${where}.getInventoryMoneyStatsAll`,
+        message: 'Lấy thống kê tiền giao dịch thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+  async getInventoryShortageByMonth(filters: IInventoryTransactionFilter) {
+    try {
+      const result = await this.getStore()
+        .inventoryTransaction()
+        .getInventoryShortageByMonth(filters);
+
+      return result;
+    } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
+      throw new AppError({
+        id: `${where}.getInventoryShortageByMonth`,
+        message: 'Lấy thống kê số lượng tồn kho thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
 }
