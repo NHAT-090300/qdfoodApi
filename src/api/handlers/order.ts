@@ -219,12 +219,22 @@ export async function createOrderUser(
       });
     }
 
-    if (!oldUser.phoneNumber || !oldUser.address || !oldUser.name) {
+    if (
+      !oldUser.phoneNumber ||
+      !oldUser.address?.city ||
+      !oldUser.address?.ward ||
+      !oldUser.address?.street ||
+      !oldUser.name
+    ) {
       await new UserApp(ctx).update(userId, {
         ...oldUser,
         phoneNumber: oldUser.phoneNumber || phoneNumber,
         name: oldUser.name || name,
-        address: oldUser.address || shippingAddress,
+        address: {
+          city: oldUser.address?.city || shippingAddress?.city,
+          ward: oldUser.address?.ward || shippingAddress?.ward,
+          street: oldUser.address?.street || shippingAddress?.address,
+        },
       });
     }
 
