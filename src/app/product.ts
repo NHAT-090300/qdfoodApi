@@ -267,4 +267,33 @@ export class ProductApp extends BaseApp {
       });
     }
   }
+
+  async findNonExistingCodes(codes: string[]) {
+    try {
+      const nonExistingCodes = await this.getStore().product().findNonExistingCodes(codes);
+      return nonExistingCodes;
+    } catch (error: any) {
+      if (error instanceof AppError) throw error;
+      throw new AppError({
+        id: `${where}.findNonExistingCodes`,
+        message: 'Kiểm tra mã sản phẩm thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+  async getListByCodes(codes: string[]) {
+    try {
+      const result = await this.getStore().product().getAssetsByCodes(codes);
+      return result;
+    } catch (error: any) {
+      if (error instanceof AppError) throw error;
+      throw new AppError({
+        id: `${where}.getListByCodes`,
+        message: 'Lấy danh sách sản phẩm thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
 }

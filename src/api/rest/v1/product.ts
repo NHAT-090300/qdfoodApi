@@ -20,6 +20,27 @@ export function initProduct(api: API) {
     ),
     api.handler(handlers.getAll),
   );
+  api.baseRoutes.product.post(
+    '/validate-codes',
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+      }),
+    ),
+    api.handler(handlers.findNonExistingCodes),
+  );
+  api.baseRoutes.product.post(
+    '/list-by-codes',
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+      }),
+    ),
+    api.handler(handlers.getListByCodes),
+  );
+
   api.baseRoutes.product.get(
     '/all',
     api.handler(authentication()),

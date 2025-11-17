@@ -304,3 +304,53 @@ export async function updateStatus(
     next(error);
   }
 }
+
+export async function findNonExistingCodes(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const codes = req.body.codes as string[];
+
+    if (!Array.isArray(codes) || codes?.length === 0) {
+      throw new AppError({
+        id: `${where}.findNonExistingCodes`,
+        message: 'codes không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    const result = await new ProductApp(ctx).findNonExistingCodes(codes);
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getListByCodes(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const codes = req.body.codes as string[];
+
+    if (!Array.isArray(codes) || codes?.length === 0) {
+      throw new AppError({
+        id: `${where}.getListByCodes`,
+        message: 'codes không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    const result = await new ProductApp(ctx).getListByCodes(codes);
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}

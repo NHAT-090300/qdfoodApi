@@ -737,4 +737,63 @@ export class MongoProduct extends BaseStore<IProduct> {
     data._id = new ObjectId(id);
     return data;
   }
+
+  async findNonExistingCodes(codes: Array<string | number>, chunkSize = 1000): Promise<string[]> {
+    if (!Array.isArray(codes) || codes.length === 0) return [];
+
+    // Chuẩn hóa input -> string, loại bỏ rỗng và loại bỏ trùng lặp
+    const normalized = Array.from(
+      new Set(
+        codes
+          .map((c) => (c === null || c === undefined ? '' : String(c).trim()))
+          .filter((s) => s !== ''),
+      ),
+    );
+
+    if (normalized.length === 0) return [];
+
+    const foundSet = new Set<string>();
+
+    for (let i = 0; i < normalized.length; i += chunkSize) {
+      const chunk = normalized.slice(i, i + chunkSize);
+      const docs = await this.collection
+        .find({ code: { $in: chunk } }, { projection: { code: 1 } })
+        .toArray();
+
+      docs.forEach((d) => {
+        if (d && d.code) foundSet.add(String(d.code));
+      });
+    }
+
+    // Những mã không có trong DB
+    const notExists = normalized.filter((c) => !foundSet.has(c));
+    return notExists;
+  }
+
+  async getAssetsByCodes(codes: Array<string | number>, chunkSize = 1000): Promise<any[]> {
+    if (!Array.isArray(codes) || codes.length === 0) return [];
+
+    // Chuẩn hóa input -> string, loại bỏ rỗng và loại bỏ trùng lặp
+    const normalized = Array.from(
+      new Set(
+        codes
+          .map((c) => (c === null || c === undefined ? '' : String(c).trim()))
+          .filter((s) => s !== ''),
+      ),
+    );
+
+    if (normalized.length === 0) return [];
+
+    const result: any[] = [];
+
+    for (let i = 0; i < normalized.length; i += chunkSize) {
+      const chunk = normalized.slice(i, i + chunkSize);
+
+      const docs = await this.collection.find({ code: { $in: chunk } }).toArray();
+
+      result.push(...docs);
+    }
+
+    return result;
+  }
 }
