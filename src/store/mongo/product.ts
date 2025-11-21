@@ -57,6 +57,7 @@ export class MongoProduct extends BaseStore<IProduct> {
       type: 1,
       isRetailAvailable: 1,
       isShow: 1,
+      tax: 1,
       ...custom,
     };
   }

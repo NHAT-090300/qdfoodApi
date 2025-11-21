@@ -26,7 +26,10 @@ export class Order implements IOrder {
     damagedQuantity?: number;
     refundAmount?: number;
     name?: string;
+    tax: number;
   }[];
+  vat: number;
+  isTax?: boolean;
   paymentMethod?: EPaymentMethod;
   note?: string;
   phoneNumber?: string;
@@ -44,6 +47,8 @@ export class Order implements IOrder {
     this.items = data.items;
     this.paymentMethod = data.paymentMethod;
     this.note = data.note;
+    this.vat = data.vat || 0;
+    this.isTax = data.isTax || false;
     this.phoneNumber = data.phoneNumber;
     this.paymentVerifierId = data.paymentVerifierId;
     this.unpaidAmount = data.unpaidAmount || 0;
@@ -56,6 +61,7 @@ export class Order implements IOrder {
       userId: yup.string().objectId().required(),
       status: yup.string().oneOf(Object.values(EOrderStatus)).required(),
       total: yup.number().required().default(0),
+      vat: yup.number().required().default(0),
       shippingAddress: yup
         .object()
         .shape({
@@ -79,6 +85,7 @@ export class Order implements IOrder {
         )
         .required(),
       paymentMethod: yup.string().oneOf(Object.values(EPaymentMethod)),
+      isTax: yup.boolean().default(false),
       note: yup.string(),
       phoneNumber: yup.string(),
       paymentVerifierId: yup.string().objectId(),

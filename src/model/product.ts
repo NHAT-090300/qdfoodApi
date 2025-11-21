@@ -19,6 +19,7 @@ export class Product implements IProduct {
   categoryId: ObjectId;
   subCategoryId?: ObjectId;
   defaultPrice: number;
+  tax: number;
   unitName: EUnit;
   type: EProductType;
   suppliers?: ISupplierInfo[];
@@ -37,6 +38,7 @@ export class Product implements IProduct {
     this.categoryId = data.categoryId;
     this.subCategoryId = data.subCategoryId;
     this.defaultPrice = data.defaultPrice || 0;
+    this.tax = data.tax || 0;
     this.unitName = data.unitName;
     this.type = data.type || EProductType?.PRODUCT;
     this.suppliers = data.suppliers ?? [];
@@ -61,7 +63,8 @@ export class Product implements IProduct {
       description: yup.string(),
       categoryId: yup.string().objectId().nullable().required(),
       subCategoryId: yup.string().objectId().nullable(),
-      defaultPrice: yup.number().required().default(0),
+      defaultPrice: yup.number().required().default(0).min(0),
+      tax: yup.number().required().default(0).min(0),
       unitName: yup.string().oneOf(Object.values(EUnit)).required(),
       type: yup
         .string()

@@ -18,6 +18,7 @@ export interface IProduct {
   createdAt?: Date;
   updatedAt?: Date;
   code: string;
+  tax: number;
 }
 
 export enum EUnit {

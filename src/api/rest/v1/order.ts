@@ -100,6 +100,17 @@ export function initOrder(api: API) {
     ),
     api.handler(handlers.updateOrder),
   );
+  api.baseRoutes.order.patch(
+    '/:id/isTax',
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+        permissions: [EPermission.WRITE_ORDER],
+      }),
+    ),
+    api.handler(handlers.updateOrderTax),
+  );
 
   api.baseRoutes.order.patch(
     '/:id/status',

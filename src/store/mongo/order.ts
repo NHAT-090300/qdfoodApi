@@ -4,6 +4,7 @@ import {
   IOrder,
   IOrderFilter,
   IOrderItem,
+  IProduct,
   IStockOrder,
   IUser,
 } from 'interface';
@@ -17,25 +18,6 @@ import { BaseStore } from './base';
 export class MongoOrder extends BaseStore<IOrder> {
   constructor(db: Db) {
     super(db, 'orders');
-  }
-
-  private getProject(custom: object = {}) {
-    return {
-      _id: 1,
-      userId: 1,
-      phoneNumber: 1,
-      name: 1,
-      status: 1,
-      total: 1,
-      shippingAddress: 1,
-      items: 1,
-      note: 1,
-      paymentMethod: 1,
-      createdAt: 1,
-      updatedAt: 1,
-      unpaidAmount: 1,
-      ...custom,
-    };
   }
 
   private getQuery(filters: IOrderFilter) {
@@ -109,7 +91,7 @@ export class MongoOrder extends BaseStore<IOrder> {
     return { condition, sort, paginate };
   }
 
-  async getPaginate(filters: IOrderFilter, project: object = {}) {
+  async getPaginate(filters: IOrderFilter) {
     const { condition, sort, paginate } = this.getQuery(filters);
 
     const result = await this.collection
@@ -374,6 +356,8 @@ export class MongoOrder extends BaseStore<IOrder> {
             updatedAt: { $first: '$updatedAt' },
             unpaidAmount: { $first: '$unpaidAmount' },
             paymentVerifierId: { $first: '$unpaidAmount' },
+            isTax: { $first: '$isTax' },
+            vat: { $first: '$vat' },
             items: {
               $push: '$items',
             },
@@ -401,188 +385,185 @@ export class MongoOrder extends BaseStore<IOrder> {
     return data;
   }
 
+  async updateIsTax(
+    id: string,
+    data: {
+      isTax: boolean;
+    },
+    session?: ClientSession,
+  ) {
+    await this.baseUpdate({ _id: new ObjectId(id) }, { $set: data }, { session });
+    return data;
+  }
+
   updateOrderItemRefund = async (orderId: string, updateItem: IOrderItem) => {
-    const productId = new ObjectId(updateItem.productId);
+    const orderIdObj = new ObjectId(orderId);
+    const productIdObj = new ObjectId(updateItem.productId);
 
-    // Chỉ update những field có giá trị
-    const fieldsToUpdate: Record<string, any> = {};
-    ['damagedQuantity', 'refundAmount'].forEach((key) => {
-      if (updateItem[key as keyof IOrderItem] !== undefined) {
-        fieldsToUpdate[key] = updateItem[key as keyof IOrderItem];
-      }
-    });
-
-    return this.collection.updateOne({ _id: new ObjectId(orderId) }, [
-      {
-        $set: {
-          items: {
-            $map: {
-              input: '$items',
-              as: 'item',
-              in: {
-                $cond: [
-                  { $eq: ['$$item.productId', productId] },
-                  { $mergeObjects: ['$$item', fieldsToUpdate] },
-                  '$$item',
-                ],
-              },
-            },
-          },
-          total: {
-            $reduce: {
-              input: {
-                $map: {
-                  input: '$items',
-                  as: 'item',
-                  in: {
-                    $cond: [
-                      { $eq: ['$$item.productId', productId] },
-                      { $mergeObjects: ['$$item', fieldsToUpdate] },
-                      '$$item',
-                    ],
-                  },
-                },
-              },
-              initialValue: 0,
-              in: {
-                $add: [
-                  '$$value',
-                  {
-                    $multiply: [
-                      {
-                        $subtract: [
-                          { $ifNull: ['$$this.quantity', 0] },
-                          { $ifNull: ['$$this.damagedQuantity', 0] },
-                        ],
-                      },
-                      { $ifNull: ['$$this.price', 0] },
-                    ],
-                  },
-                ],
-              },
-            },
-          },
-          unpaidAmount: {
-            $subtract: [
-              '$unpaidAmount',
-              {
-                $multiply: [
-                  { $ifNull: [updateItem.damagedQuantity, 0] },
-                  {
-                    $let: {
-                      vars: {
-                        matchedItem: {
-                          $first: {
-                            $filter: {
-                              input: '$items',
-                              as: 'item',
-                              cond: { $eq: ['$$item.productId', productId] },
-                            },
-                          },
-                        },
-                      },
-                      in: { $ifNull: ['$$matchedItem.price', 0] },
-                    },
-                  },
-                ],
-              },
-            ],
+    // 1️⃣ Aggregate order + lookup product để lấy tax
+    const orderWithTax = await this.collection
+      .aggregate([
+        { $match: { _id: orderIdObj } },
+        { $unwind: '$items' },
+        {
+          $lookup: {
+            from: 'product',
+            localField: 'items.productId',
+            foreignField: '_id',
+            as: 'productData',
           },
         },
+        { $unwind: { path: '$productData', preserveNullAndEmptyArrays: true } },
+        {
+          $set: {
+            'items.tax': '$productData.tax',
+            'items.damagedQuantity': {
+              $cond: [
+                { $eq: ['$items.productId', productIdObj] },
+                updateItem.damagedQuantity ?? '$items.damagedQuantity',
+                '$items.damagedQuantity',
+              ],
+            },
+            'items.refundAmount': {
+              $cond: [
+                { $eq: ['$items.productId', productIdObj] },
+                updateItem.refundAmount ?? '$items.refundAmount',
+                '$items.refundAmount',
+              ],
+            },
+          },
+        },
+        {
+          $group: {
+            _id: '$_id',
+            items: { $push: '$items' },
+            total: {
+              $sum: {
+                $multiply: [
+                  { $subtract: ['$items.quantity', { $ifNull: ['$items.damagedQuantity', 0] }] },
+                  '$items.price',
+                ],
+              },
+            },
+            vat: {
+              $sum: {
+                $multiply: [
+                  { $subtract: ['$items.quantity', { $ifNull: ['$items.damagedQuantity', 0] }] },
+                  '$items.price',
+                  { $divide: [{ $ifNull: ['$items.tax', 0] }, 100] },
+                ],
+              },
+            },
+            unpaidAmount: {
+              $sum: {
+                $multiply: [
+                  { $subtract: ['$items.quantity', { $ifNull: ['$items.damagedQuantity', 0] }] },
+                  '$items.price',
+                ],
+              },
+            },
+          },
+        },
+      ])
+      .toArray();
+
+    if (orderWithTax.length === 0) throw new Error('Order not found');
+
+    const updatedOrder = orderWithTax[0];
+
+    // 2️⃣ Merge trở lại collection order
+    await this.collection.updateOne(
+      { _id: orderIdObj },
+      {
+        $set: {
+          items: updatedOrder.items,
+          total: updatedOrder.total,
+          vat: updatedOrder.vat,
+          unpaidAmount: updatedOrder.unpaidAmount,
+        },
       },
-    ]);
+    );
   };
 
   updateOrderItemQuantity = async (orderId: string, updateItem: IOrderItem) => {
-    const productId = new ObjectId(updateItem.productId);
+    const orderIdObj = new ObjectId(orderId);
+    const productIdObj = new ObjectId(updateItem.productId);
 
-    // Chỉ update những field có giá trị
-    const fieldsToUpdate: Record<string, any> = {};
-    ['quantity'].forEach((key) => {
-      if (updateItem[key as keyof IOrderItem] !== undefined) {
-        fieldsToUpdate[key] = updateItem[key as keyof IOrderItem];
-      }
-    });
-
-    return this.collection.updateOne({ _id: new ObjectId(orderId) }, [
-      {
-        $set: {
-          items: {
-            $map: {
-              input: '$items',
-              as: 'item',
-              in: {
-                $cond: [
-                  { $eq: ['$$item.productId', productId] },
-                  { $mergeObjects: ['$$item', fieldsToUpdate] },
-                  '$$item',
-                ],
-              },
-            },
-          },
-          total: {
-            $reduce: {
-              input: {
-                $map: {
-                  input: '$items',
-                  as: 'item',
-                  in: {
-                    $cond: [
-                      { $eq: ['$$item.productId', productId] },
-                      { $mergeObjects: ['$$item', fieldsToUpdate] },
-                      '$$item',
-                    ],
-                  },
-                },
-              },
-              initialValue: 0,
-              in: {
-                $add: [
-                  '$$value',
-                  {
-                    $multiply: [
-                      {
-                        $subtract: [
-                          { $ifNull: ['$$this.quantity', 0] },
-                          { $ifNull: ['$$this.damagedQuantity', 0] },
-                        ],
-                      },
-                      { $ifNull: ['$$this.price', 0] },
-                    ],
-                  },
-                ],
-              },
-            },
-          },
-          unpaidAmount: {
-            $subtract: [
-              '$unpaidAmount',
-              {
-                $multiply: [
-                  { $ifNull: [updateItem.damagedQuantity, 0] },
-                  {
-                    $let: {
-                      vars: {
-                        matchedItem: {
-                          $first: {
-                            $filter: {
-                              input: '$items',
-                              as: 'item',
-                              cond: { $eq: ['$$item.productId', productId] },
-                            },
-                          },
-                        },
-                      },
-                      in: { $ifNull: ['$$matchedItem.price', 0] },
-                    },
-                  },
-                ],
-              },
-            ],
+    const orderWithTax = await this.collection
+      .aggregate([
+        { $match: { _id: orderIdObj } },
+        { $unwind: '$items' },
+        {
+          $lookup: {
+            from: 'product',
+            localField: 'items.productId',
+            foreignField: '_id',
+            as: 'productData',
           },
         },
+        { $unwind: { path: '$productData', preserveNullAndEmptyArrays: true } },
+        {
+          $set: {
+            'items.tax': '$productData.tax',
+            'items.quantity': {
+              $cond: [
+                { $eq: ['$items.productId', productIdObj] },
+                updateItem.quantity,
+                '$items.quantity',
+              ],
+            },
+          },
+        },
+        {
+          $group: {
+            _id: '$_id',
+            items: { $push: '$items' },
+            total: {
+              $sum: {
+                $multiply: [
+                  { $subtract: ['$items.quantity', { $ifNull: ['$items.damagedQuantity', 0] }] },
+                  '$items.price',
+                ],
+              },
+            },
+            vat: {
+              $sum: {
+                $multiply: [
+                  { $subtract: ['$items.quantity', { $ifNull: ['$items.damagedQuantity', 0] }] },
+                  '$items.price',
+                  { $divide: [{ $ifNull: ['$items.tax', 0] }, 100] },
+                ],
+              },
+            },
+            unpaidAmount: {
+              $sum: {
+                $multiply: [
+                  { $subtract: ['$items.quantity', { $ifNull: ['$items.damagedQuantity', 0] }] },
+                  '$items.price',
+                ],
+              },
+            },
+          },
+        },
+      ])
+      .toArray();
+
+    if (orderWithTax.length === 0) throw new Error('Order not found');
+
+    const updatedOrder = orderWithTax[0];
+
+    // 2️⃣ Merge trở lại collection order
+    await this.collection.updateOne(
+      { _id: orderIdObj },
+      {
+        $set: {
+          items: updatedOrder.items,
+          total: updatedOrder.total,
+          vat: updatedOrder.vat,
+          unpaidAmount: updatedOrder.unpaidAmount,
+        },
       },
-    ]);
+    );
   };
 
   async getStockOrderPaginate(filters: IOrderFilter) {

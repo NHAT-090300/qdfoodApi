@@ -240,7 +240,7 @@ export async function updateUserClient(
       });
     }
 
-    const data = await User.validateUpdate(req.body);
+    const data = await User.validateUpdate(new User(req.body));
 
     const result = await new UserApp(ctx).updateClient(id, data);
 
@@ -267,7 +267,7 @@ export async function updateUser(
       });
     }
 
-    const data = await User.validateUpdate(req.body);
+    const data = await User.validateUpdate(new User(req.body));
 
     const result = await new UserApp(ctx).update(id, data);
 

@@ -24,6 +24,7 @@ export class MongoUser extends BaseStore<IUser> {
       isDelete: 1,
       email: 1,
       permission: 1,
+      isTax: 1,
       ...custom,
     };
   }

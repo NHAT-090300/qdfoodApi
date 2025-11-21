@@ -14,6 +14,8 @@ export interface IOrder {
   paymentMethod?: EPaymentMethod;
   note?: string;
   phoneNumber?: string;
+  vat: number;
+  isTax?: boolean;
   isPaid?: boolean;
   isDelivered?: boolean;
   createdAt?: Date;
@@ -34,6 +36,7 @@ export interface IOrderItem {
   damagedQuantity?: number;
   refundAmount?: number;
   name?: string;
+  tax: number;
 }
 
 export interface IOrderShippingAddress {

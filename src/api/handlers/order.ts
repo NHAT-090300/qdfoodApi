@@ -6,6 +6,7 @@ import { OrderApp, ProductApp, UserApp } from 'app';
 import { EOrderStatus, EPaymentMethod, IOrderFilter, IOrderItem } from 'interface';
 import { AppError, Order } from 'model';
 import { isValidId, tryParseJson, validatePagination, validatePhone } from 'utils';
+import { isBoolean, isNumber } from 'lodash';
 
 const where = 'Handlers.order';
 
@@ -147,6 +148,9 @@ export async function createOrderUser(
       throw new AppError({
         id: `${where}.createOrderUser`,
         message: `Sản phẩm ${notFoundProducts?.map((p: IOrderItem) => p?.name || p?.productId)?.join(', ')} không còn đăng bán. Vui lòng chọn lại sản phẩm khác.`,
+        detail: {
+          notFoundProducts,
+        },
         statusCode: StatusCodes.BAD_REQUEST,
       });
     }
@@ -159,13 +163,15 @@ export async function createOrderUser(
         throw new AppError({
           id: `${where}.createOrderUser`,
           message: `Sản phẩm ${item.name || item.productId} không tồn tại`,
+          detail: { notFoundProducts: [item.productId] },
           statusCode: StatusCodes.BAD_REQUEST,
         });
       }
-      if (item.quantity <= 0) {
+      if (!isNumber(item.quantity) || item.quantity <= 0) {
         throw new AppError({
           id: `${where}.createOrderUser`,
           message: 'Số lượng sản phẩm phải lớn hơn 0',
+          detail: { notFoundProducts: [item.productId] },
           statusCode: StatusCodes.BAD_REQUEST,
         });
       }
@@ -174,6 +180,7 @@ export async function createOrderUser(
         productId: item.productId,
         quantity: item.quantity,
         price: product.finalPrice,
+        tax: product.tax,
         unitName,
         damagedQuantity: 0,
         refundAmount: 0,
@@ -185,29 +192,10 @@ export async function createOrderUser(
       0,
     );
 
-    const totalParam = items.reduce(
-      (sum: number, item: IOrderItem) => sum + item.quantity * item.price,
+    const vat = orderItems.reduce(
+      (sum: number, item: IOrderItem) => sum + (item.quantity * item.price * item.tax) / 100,
       0,
     );
-
-    if (total !== totalParam) {
-      throw new AppError({
-        id: `${where}.createOrderUser`,
-        message: 'Tổng tiền không khớp',
-        statusCode: StatusCodes.BAD_REQUEST,
-      });
-    }
-
-    const data = await Order.sequelize({
-      userId,
-      status: EOrderStatus?.PENDING,
-      total,
-      note,
-      phoneNumber,
-      paymentMethod,
-      shippingAddress,
-      items,
-    });
 
     const oldUser = await new UserApp(ctx).getById(userId);
 
@@ -237,6 +225,19 @@ export async function createOrderUser(
         },
       });
     }
+
+    const data = await Order.sequelize({
+      userId,
+      status: EOrderStatus?.PENDING,
+      total,
+      vat,
+      note,
+      phoneNumber,
+      paymentMethod,
+      shippingAddress,
+      items,
+      isTax: oldUser?.isTax,
+    });
 
     const result = await new OrderApp(ctx).create(data);
 
@@ -319,14 +320,7 @@ export async function getPagination(
 
     validatePagination(filters.page, filters.limit);
 
-    const result = await new OrderApp(ctx).getPaginate(filters, {
-      user: {
-        _id: 1,
-        name: 1,
-        phoneNumber: 1,
-        email: 1,
-      },
-    });
+    const result = await new OrderApp(ctx).getPaginate(filters);
 
     res.json(result);
   } catch (err) {
@@ -399,6 +393,40 @@ export async function updateOrder(
     const data = await Order.sequelize(req.body);
 
     const result = await new OrderApp(ctx).update(id, data);
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateOrderTax(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = req.params.id as string;
+    const isTax = req.body.isTax;
+
+    if (!isValidId(id)) {
+      throw new AppError({
+        id: `${where}.updateOrder`,
+        message: 'id không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    if (isBoolean(isTax) === false) {
+      throw new AppError({
+        id: `${where}.updateOrder`,
+        message: 'isTax phải là boolean',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    const result = await new OrderApp(ctx).updateIsTax(id, { isTax });
 
     res.json(result);
   } catch (error) {

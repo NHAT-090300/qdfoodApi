@@ -12,11 +12,12 @@ export interface IUser {
     city?: string;
     ward?: string;
     street?: string;
-  };
-  permission?: EPermission[];
+  } | null;
+  permission?: EPermission[] | null;
   role?: ERole;
   isDelete?: boolean;
   otp?: string;
+  isTax?: boolean;
   otpExpiresAt?: Date;
   isVerified?: boolean;
   createdAt?: Date;

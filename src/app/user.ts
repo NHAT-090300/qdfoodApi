@@ -74,6 +74,7 @@ export class UserApp extends BaseApp {
             password: 1,
             social: 1,
             permission: 1,
+            isTax: 1,
           },
         });
 

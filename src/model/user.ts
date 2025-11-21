@@ -18,9 +18,10 @@ export class User implements IUser {
     city?: string;
     ward?: string;
     street?: string;
-  };
-  permission?: EPermission[];
+  } | null;
+  permission?: EPermission[] | null;
   role?: ERole;
+  isTax?: boolean;
   isDelete: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -29,14 +30,15 @@ export class User implements IUser {
   constructor(data: IUser) {
     this._id = data._id;
     this.avatar = data.avatar || '';
-    this.name = data.name;
+    this.name = data.name || '';
     this.email = data.email;
     this.password = data.password;
     this.phoneNumber = data.phoneNumber || '';
-    this.address = data.address;
+    this.address = data.address || {};
     this.role = data.role || ERole?.USER;
-    this.permission = data.permission;
+    this.permission = data.permission || [];
     this.isDelete = data.isDelete || false;
+    this.isTax = data.isTax || false;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
     this.deletedAt = data.deletedAt;
@@ -45,15 +47,20 @@ export class User implements IUser {
   static async sequelize(data: any) {
     const schema = yup.object().shape({
       avatar: yup.string(),
-      name: yup.string(),
+      name: yup.string().default(''),
       email: yup.string().required('Email is required'),
       password: yup.string().required('Password is required'),
       phoneNumber: yup.string().default(''),
-      address: yup.object().shape({
-        street: yup.string(),
-        ward: yup.string(),
-        city: yup.string(),
-      }),
+      isTax: yup.boolean().default(false),
+      address: yup
+        .object()
+        .shape({
+          street: yup.string(),
+          ward: yup.string(),
+          city: yup.string(),
+        })
+        .default({})
+        .nullable(),
       permission: yup
         .array()
         .of(
@@ -63,7 +70,8 @@ export class User implements IUser {
             .defined(),
         )
         .default([])
-        .optional(),
+        .optional()
+        .nullable(),
     });
 
     const [errors, result] = await to(validateWithYup(schema, data));
@@ -77,16 +85,21 @@ export class User implements IUser {
 
   static async validateUpdate(data: any) {
     const schema = yup.object().shape({
-      name: yup.string().required('Name is required'),
+      name: yup.string().default(''),
       email: yup.string().email('Email is invalid').required('Email is required'),
       avatar: yup.string(),
       role: yup.string().oneOf(Object.values(ERole), 'Role invalid'),
+      isTax: yup.boolean().default(false),
       phoneNumber: yup.string(),
-      address: yup.object().shape({
-        street: yup.string(),
-        ward: yup.string(),
-        city: yup.string(),
-      }),
+      address: yup
+        .object()
+        .shape({
+          street: yup.string(),
+          ward: yup.string(),
+          city: yup.string(),
+        })
+        .default({})
+        .nullable(),
       permission: yup
         .array()
         .of(
@@ -96,7 +109,8 @@ export class User implements IUser {
             .defined(),
         )
         .default([])
-        .optional(),
+        .optional()
+        .nullable(),
     });
 
     const [errors, result] = await to(validateWithYup(schema, data));

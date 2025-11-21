@@ -46,9 +46,9 @@ export class OrderApp extends BaseApp {
     }
   }
 
-  async getPaginate(filters: IOrderFilter, project: object = {}) {
+  async getPaginate(filters: IOrderFilter) {
     try {
-      const result = await this.getStore().order().getPaginate(filters, project);
+      const result = await this.getStore().order().getPaginate(filters);
 
       return result;
     } catch (error: any) {
@@ -188,6 +188,27 @@ export class OrderApp extends BaseApp {
     };
   }
 
+  async updateIsTax(
+    orderId: string,
+    data: {
+      isTax: boolean;
+    },
+  ) {
+    try {
+      const result = await this.getStore().order().updateIsTax(orderId, data);
+
+      return result;
+    } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
+      throw new AppError({
+        id: `${where}.updateIsTax`,
+        message: 'Cập nhật order thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
   async create(data: Order) {
     try {
       const result = await this.getStore().order().createOne(data);
@@ -260,6 +281,10 @@ export class OrderApp extends BaseApp {
         });
       }
 
+      // ✅ VAT logic
+      const vat = Number(order?.vat || 0);
+      const finalTotal = Number(order?.total || 0) + (order?.isTax ? vat : 0);
+
       if (data?.status === EOrderStatus.SHIPPING) {
         await this.getStore().inventory().updateInventoryFromOrder(order);
 
@@ -279,23 +304,26 @@ export class OrderApp extends BaseApp {
         }
       }
 
+      // ✅ Check không cho trả vượt công nợ
       if (Number(data?.paymentAmount) > Number(order?.unpaidAmount)) {
         throw new AppError({
           id: `${where}.updateStatus`,
-          message: 'Dữ liệu không tồn tại trong hệ thống',
+          message: 'Số tiền thanh toán vượt quá số tiền nợ',
           statusCode: StatusCodes.BAD_REQUEST,
         });
       }
 
       const updateData: any = {
         ...data,
-        unpaidAmount: 0,
+        unpaidAmount: order?.unpaidAmount || 0,
       };
 
+      // ✅ Khi hoàn tất đơn → ghi nhận công nợ
       if (data?.status === EOrderStatus.COMPLETED) {
-        updateData.unpaidAmount = order?.total;
+        updateData.unpaidAmount = finalTotal;
       }
 
+      // ✅ Trả hết tiền → PAID
       if (
         data?.status === EOrderStatus.PAID ||
         (data?.paymentAmount &&
@@ -306,9 +334,11 @@ export class OrderApp extends BaseApp {
         updateData.paymentVerifierId = new ObjectId(data.paymentVerifierId);
       }
 
+      // ✅ Trả một phần → DEBT
       if (data?.status === EOrderStatus.DEBT) {
         updateData.unpaidAmount =
           Number(order?.unpaidAmount || 0) - Number(data?.paymentAmount || 0);
+
         updateData.paymentVerifierId = new ObjectId(data.paymentVerifierId);
       }
 

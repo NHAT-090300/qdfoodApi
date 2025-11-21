@@ -1,7 +1,6 @@
 import {
   EInventoryTransactionType,
   ESortOrder,
-  IInventoryShortageItem,
   IInventoryTransaction,
   IInventoryTransactionFilter,
 } from 'interface';
