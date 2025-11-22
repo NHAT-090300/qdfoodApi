@@ -15,7 +15,7 @@ import { BaseStore } from './base';
 
 export class MongoProductPriceProposal extends BaseStore<IProductPriceProposal> {
   constructor(db: Db) {
-    super(db, 'product_prices_proposal');
+    super(db, 'product_price_proposals');
   }
 
   private getProject(custom: object = {}) {

@@ -285,6 +285,21 @@ export class ProductPriceApp extends BaseApp {
     try {
       const userObjectId = new ObjectId(userId);
       const currentYear = moment().year();
+      const currentMonth = month.toString().padStart(2, '0');
+      const nextMonth = (month + 1).toString().padStart(2, '0');
+
+      const user = await this.getStore()
+        .user()
+        .findById(userObjectId, { projection: { isTax: 1 } });
+
+      if (!user) {
+        throw new AppError({
+          id: 'PriceService.exportPriceList',
+          message: 'Người dùng không tồn tại',
+          statusCode: StatusCodes.BAD_REQUEST,
+        });
+      }
+      const isTax = user?.isTax || false;
 
       const pipeline = [
         // 1. BẮT ĐẦU TỪ PRODUCTS (KHÔNG SELF-LOOKUP)
@@ -346,6 +361,7 @@ export class ProductPriceApp extends BaseApp {
             currentPrice: { $ifNull: ['$current.customPrice', 0] },
             proposalPrice: { $ifNull: ['$proposal.customPrice', 0] },
             code: { $ifNull: ['$code', ''] },
+            tax: { $ifNull: ['$tax', 0] },
           },
         },
         {
@@ -380,7 +396,7 @@ export class ProductPriceApp extends BaseApp {
       addHeaderRow('SĐT: 0905575527', false, 12);
       sheet.addRow([]);
       addHeaderRow('BẢNG GIÁ HÀNG THỰC PHẨM', true, 16);
-      addHeaderRow(`ÁP DỤNG THÁNG ${month.toString().padStart(2, '0')}.${currentYear}`, false, 12);
+      addHeaderRow(`ÁP DỤNG THÁNG ${currentMonth}.${currentYear}`, false, 12);
       sheet.addRow([]);
 
       // === TABLE HEADER ===
@@ -390,8 +406,8 @@ export class ProductPriceApp extends BaseApp {
         'TÊN NGUYÊN LIỆU',
         'ĐVT',
         'SỐ LƯỢNG',
-        `GIÁ HIỆN TẠI`,
-        `GIÁ ĐỀ XUẤT`,
+        `GIÁ THÁNG ${currentMonth} ${isTax ? '(Đã có VAT)' : ''}`,
+        `GIÁ THÁNG ${nextMonth} ${isTax ? '(Đã có VAT)' : ''}`,
         'GHI CHÚ',
       ]);
 
@@ -404,9 +420,17 @@ export class ProductPriceApp extends BaseApp {
 
       // === DATA ROWS ===
       data.forEach((item: any, index: number) => {
+        const priceWithVAT = isTax
+          ? item.currentPrice + (item.currentPrice * item.tax || 0) / 100
+          : item.currentPrice;
+
+        const proposalPriceWithVAT = isTax
+          ? item.proposalPrice + (item.proposalPrice * item.tax || 0) / 100
+          : item.proposalPrice;
+
         const hasCurrent = typeof item.currentPrice === 'number' && item.currentPrice > 0;
         const hasProposal = typeof item.proposalPrice === 'number' && item.proposalPrice > 0;
-        const diff = hasCurrent && hasProposal ? item.proposalPrice - item.currentPrice : 0;
+        const diff = hasCurrent && hasProposal ? proposalPriceWithVAT - priceWithVAT : 0;
         let note = '-';
         if (hasCurrent && hasProposal) {
           if (diff > 0) note = `Tăng ${diff.toLocaleString()}`;
@@ -419,14 +443,15 @@ export class ProductPriceApp extends BaseApp {
           item.name || '',
           (EUnitDisplay as any)?.[item.unitName] || '',
           1,
-          item.currentPrice,
-          item.proposalPrice,
+          priceWithVAT,
+          proposalPriceWithVAT,
           note,
         ]);
         row.font = { name: 'Times New Roman', size: 13 };
 
         row.getCell(5).numFmt = '#,##0';
         row.getCell(6).numFmt = '#,##0';
+        row.getCell(7).numFmt = '#,##0';
 
         row.getCell(1).alignment = { horizontal: 'center' };
         row.getCell(2).alignment = { horizontal: 'center' };
@@ -436,7 +461,7 @@ export class ProductPriceApp extends BaseApp {
         row.getCell(6).alignment = { horizontal: 'center' };
         row.getCell(7).alignment = { horizontal: 'center' };
 
-        row.height = 25;
+        row.height = 20;
       });
 
       // === CỘT RỘNG + VIỀN ===
@@ -471,6 +496,7 @@ export class ProductPriceApp extends BaseApp {
       const buffer = await workbook.xlsx.writeBuffer();
       return buffer;
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
       throw new AppError({
         id: 'PriceService.exportPriceList',
         message: 'Xuất Excel thất bại',

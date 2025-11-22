@@ -4,7 +4,6 @@ import {
   IOrder,
   IOrderFilter,
   IOrderItem,
-  IProduct,
   IStockOrder,
   IUser,
 } from 'interface';
@@ -147,6 +146,8 @@ export class MongoOrder extends BaseStore<IOrder> {
             userId: { $first: '$userId' },
             status: { $first: '$status' },
             total: { $first: '$total' },
+            vat: { $first: '$vat' },
+            isTax: { $first: '$isTax' },
             unpaidAmount: { $push: '$unpaidAmount' },
             shippingAddress: { $first: '$shippingAddress' },
             paymentMethod: { $first: '$paymentMethod' },
@@ -275,6 +276,8 @@ export class MongoOrder extends BaseStore<IOrder> {
             userId: { $first: '$userId' },
             status: { $first: '$status' },
             total: { $first: '$total' },
+            vat: { $first: '$vat' },
+            isTax: { $first: '$isTax' },
             unpaidAmount: { $first: '$unpaidAmount' },
             shippingAddress: { $first: '$shippingAddress' },
             paymentMethod: { $first: '$paymentMethod' },
@@ -873,18 +876,22 @@ export class MongoOrder extends BaseStore<IOrder> {
         $addFields: {
           year: { $year: '$createdAt' },
           month: { $month: '$createdAt' },
+          totalWithTax: {
+            $cond: [{ $eq: ['$isTax', true] }, { $add: ['$total', '$vat'] }, '$total'],
+          },
+          unpaidWithTax: '$unpaidAmount',
         },
       },
       {
         $group: {
           _id: { year: '$year', month: '$month' }, // gom theo tháng
-          totalOrderAmount: { $sum: '$total' },
+          totalOrderAmount: { $sum: '$totalWithTax' },
           totalOrders: { $sum: 1 },
           totalDebtAmount: {
-            $sum: '$unpaidAmount',
+            $sum: '$unpaidWithTax',
           },
           totalPaidAmount: {
-            $sum: { $subtract: ['$total', '$unpaidAmount'] },
+            $sum: { $subtract: ['$totalWithTax', '$unpaidWithTax'] },
           },
         },
       },

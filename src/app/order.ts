@@ -521,12 +521,14 @@ export class OrderApp extends BaseApp {
       // Items
       let totalQty = 0;
       let totalMoney = 0;
+      let totalMoneyWithVAT = 0;
       order.items?.forEach((item: any, index: number) => {
         const quantity = Number(item.quantity) - Number(item.damagedQuantity) || 0;
         const price = Number(item?.price) || 0;
         const lineTotal = quantity * price;
         totalQty += quantity;
         totalMoney += lineTotal;
+        totalMoneyWithVAT += lineTotal;
 
         const row = worksheet.addRow([
           index + 1,
@@ -557,8 +559,24 @@ export class OrderApp extends BaseApp {
       worksheet.addRow([]);
       worksheet.addRow(['', '', '', 'Tổng số lượng', '', totalQty, '']);
       worksheet.addRow(['', '', '', 'Tổng tiền hàng', '', totalMoney?.toLocaleString('vi-VN'), '']);
-      worksheet.addRow(['', '', '', 'Thuế GTGT 8%', '', '', '']);
-      worksheet.addRow(['', '', '', 'Tổng cộng', '', totalMoney?.toLocaleString('vi-VN'), '']);
+      worksheet.addRow([
+        '',
+        '',
+        '',
+        'Thuế GTGT 8%',
+        '',
+        order?.isTax ? order?.vat?.toLocaleString('vi-VN') : 0,
+        '',
+      ]);
+      worksheet.addRow([
+        '',
+        '',
+        '',
+        'Tổng cộng',
+        '',
+        totalMoneyWithVAT?.toLocaleString('vi-VN'),
+        '',
+      ]);
 
       const startRow = worksheet.lastRow!.number - 3;
       const endRow = worksheet.lastRow!.number;
@@ -651,7 +669,7 @@ export class OrderApp extends BaseApp {
             customerEmail,
             customerPhone,
             address,
-            item.code || '---',
+            item.code || '',
             item.name || '',
             item.quantity,
             formatCurrency(Number(item.price)),
@@ -983,12 +1001,14 @@ export class OrderApp extends BaseApp {
     // Items
     let totalQty = 0;
     let totalMoney = 0;
+    let totalMoneyWithVAT = order?.isTax ? order?.vat : 0;
     order.items?.forEach((item: any, index: number) => {
       const quantity = Number(item.quantity) - Number(item.damagedQuantity) || 0;
       const price = Number(item?.price) || 0;
       const lineTotal = quantity * price;
       totalQty += quantity;
       totalMoney += lineTotal;
+      totalMoneyWithVAT += lineTotal;
 
       const row = worksheet.addRow([
         index + 1,
@@ -1018,8 +1038,16 @@ export class OrderApp extends BaseApp {
     worksheet.addRow([]);
     worksheet.addRow(['', '', '', 'Tổng số lượng', '', totalQty, '']);
     worksheet.addRow(['', '', '', 'Tổng tiền hàng', '', totalMoney?.toLocaleString('vi-VN'), '']);
-    worksheet.addRow(['', '', '', 'Thuế GTGT 8%', '', '', '']);
-    worksheet.addRow(['', '', '', 'Tổng cộng', '', totalMoney?.toLocaleString('vi-VN'), '']);
+    worksheet.addRow([
+      '',
+      '',
+      '',
+      'Thuế GTGT 8%',
+      '',
+      order?.isTax ? order?.vat?.toLocaleString('vi-VN') : 0,
+      '',
+    ]);
+    worksheet.addRow(['', '', '', 'Tổng cộng', '', totalMoneyWithVAT?.toLocaleString('vi-VN'), '']);
 
     const startRow = worksheet.lastRow!.number - 3;
     const endRow = worksheet.lastRow!.number;
