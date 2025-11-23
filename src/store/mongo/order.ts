@@ -354,6 +354,7 @@ export class MongoOrder extends BaseStore<IOrder> {
             user: { $first: '$user' },
             status: { $first: '$status' },
             total: { $first: '$total' },
+            note: { $first: '$note' },
             shippingAddress: { $first: '$shippingAddress' },
             createdAt: { $first: '$createdAt' },
             updatedAt: { $first: '$updatedAt' },
