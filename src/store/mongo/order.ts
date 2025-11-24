@@ -232,12 +232,7 @@ export class MongoOrder extends BaseStore<IOrder> {
             as: 'user',
           },
         },
-        {
-          $unwind: {
-            path: '$user',
-            preserveNullAndEmptyArrays: true,
-          },
-        },
+        { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
 
         { $unwind: { path: '$items' } },
 
@@ -249,23 +244,33 @@ export class MongoOrder extends BaseStore<IOrder> {
             as: 'items.product',
           },
         },
+        { $unwind: { path: '$items.product', preserveNullAndEmptyArrays: true } },
         {
-          $unwind: {
-            path: '$items.product',
-            preserveNullAndEmptyArrays: true,
+          $addFields: {
+            items: { $mergeObjects: ['$items.product', '$items'] },
+          },
+        },
+        {
+          $lookup: {
+            from: 'category',
+            localField: 'items.categoryId',
+            foreignField: '_id',
+            as: 'items.category',
+          },
+        },
+        { $unwind: { path: '$items.category', preserveNullAndEmptyArrays: true } },
+
+        {
+          $addFields: {
+            'items.categoryId': '$items.category._id',
+            'items.categoryName': '$items.category.name',
           },
         },
 
         {
-          $addFields: {
-            items: {
-              $mergeObjects: ['$items.product', '$items'],
-            },
-          },
-        },
-        {
           $project: {
             'items.product': 0,
+            'items.category': 0,
           },
         },
 

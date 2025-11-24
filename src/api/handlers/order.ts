@@ -552,6 +552,7 @@ export async function exportOrders(
       res.status(200).end();
     });
   } catch (err) {
+    console.log(err);
     next(err);
   }
 }

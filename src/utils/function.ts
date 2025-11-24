@@ -11,6 +11,7 @@ import { logger } from 'logger';
 import provinces from '@constants/cities.json';
 import wards from '@constants/wards.json';
 import { isNaN } from 'lodash';
+import ExcelJS from 'exceljs';
 
 export function generateRandomNumber() {
   return Math.floor(100000 + Math.random() * 999999);
@@ -415,4 +416,29 @@ export function mergeProductLogItems(items: IProductLogItem[]): IProductLogItem[
       return acc;
     }, {}),
   );
+}
+
+export const getInitials = (name?: string) => {
+  if (!name) return '';
+  return name
+    .trim()
+    .split(/\s+/) // tách theo khoảng trắng
+    .map((word) => word[0]) // lấy ký tự đầu
+    .join('')
+    .toUpperCase(); // viết hoa
+};
+
+export function styleCell(
+  cell: ExcelJS.Cell,
+  opts: { bold?: boolean; size?: number; align?: 'left' | 'center' | 'right' } = {},
+) {
+  cell.font = {
+    name: 'Times New Roman',
+    size: opts.size ?? 13,
+    bold: opts.bold ?? false,
+  };
+  cell.alignment = {
+    horizontal: opts.align ?? 'left',
+    vertical: 'middle',
+  };
 }

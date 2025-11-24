@@ -9,7 +9,13 @@ import autoTable from 'jspdf-autotable';
 import { round } from 'lodash';
 import { AppError, InventoryTransaction, Order } from 'model';
 import { ObjectId } from 'mongodb';
-import { findOrderWithStatus, formatCurrency, getOrderAddress } from 'utils';
+import {
+  findOrderWithStatus,
+  formatCurrency,
+  getInitials,
+  getOrderAddress,
+  styleCell,
+} from 'utils';
 
 import BaseApp from './base';
 
@@ -425,21 +431,8 @@ export class OrderApp extends BaseApp {
     const workbook = new ExcelJS.Workbook();
     const orders = await this.getStore().order().getList(filters);
 
-    // Helper style
-    function styleCell(
-      cell: ExcelJS.Cell,
-      opts: { bold?: boolean; size?: number; align?: 'left' | 'center' | 'right' } = {},
-    ) {
-      cell.font = {
-        name: 'Times New Roman',
-        size: opts.size ?? 13,
-        bold: opts.bold ?? false,
-      };
-      cell.alignment = {
-        horizontal: opts.align ?? 'left',
-        vertical: 'middle',
-      };
-    }
+    const summaryMap = new Map<string, any>();
+    const storeColumns: string[] = [];
 
     for (const [i, order] of orders.entries()) {
       const numberOrder = await this.getStore()
@@ -447,8 +440,8 @@ export class OrderApp extends BaseApp {
         .count({
           _id: { $lt: new ObjectId(order._id) },
         });
-
-      const sheetName = `PXK_${numberOrder + 1}`;
+      const shortName = getInitials(order?.user?.name);
+      const sheetName = `PXK_${shortName}_${numberOrder + 1}`;
       const worksheet = workbook.addWorksheet(sheetName);
 
       // Company Info
@@ -529,6 +522,27 @@ export class OrderApp extends BaseApp {
         totalQty += quantity;
         totalMoney += lineTotal;
         totalMoneyWithVAT += lineTotal;
+
+        // ✅ CATEGORY INFO
+        const categoryId = item?.categoryId || 'uncategory';
+        const categoryName = item?.categoryName || 'Chưa phân loại';
+
+        // ✅ GOM THEO CATEGORY + SP
+        const key = `${categoryId}|${item.name}|${item.unitName || '-'}`;
+
+        if (!summaryMap.has(key)) {
+          summaryMap.set(key, {
+            categoryId,
+            categoryName,
+            name: item.name,
+            unit: item.unitName || '-',
+            storeQuantities: {},
+            supplier: item?.supplier ?? '',
+          });
+        }
+
+        const entry = summaryMap.get(key);
+        entry.storeQuantities[sheetName] = (entry.storeQuantities[sheetName] || 0) + quantity;
 
         const row = worksheet.addRow([
           index + 1,
@@ -633,6 +647,84 @@ export class OrderApp extends BaseApp {
       worksheet.getColumn(3).width = 30;
       worksheet.getColumn(6).width = 20;
       worksheet.getColumn(7).width = 20;
+
+      storeColumns.push(sheetName);
+    }
+
+    // ==========================================
+    // ✅ SHEET TỔNG HỢP + CATEGORY
+    // ==========================================
+    const summarySheet = workbook.addWorksheet('TONG_HOP');
+
+    const summaryHeader = ['Loại hàng', 'Tên hàng', 'ĐVT', ...storeColumns, 'Tổng cộng', 'NCC'];
+
+    const headerRow = summarySheet.addRow(summaryHeader);
+
+    headerRow.eachCell((cell) => {
+      styleCell(cell, { bold: true, size: 13, align: 'center' });
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+    });
+
+    const sortedEntries = Array.from(summaryMap?.values())?.sort((a, b) =>
+      (a?.categoryName || '')?.localeCompare(b?.categoryName || ''),
+    );
+
+    let lastCategory = '';
+    let startMergeRow = 2;
+
+    for (let i = 0; i < sortedEntries.length; i++) {
+      const entry = sortedEntries[i];
+
+      const row: any[] = [entry.categoryName, entry.name, entry.unit];
+
+      let total = 0;
+
+      for (const store of storeColumns) {
+        const qty = entry.storeQuantities[store] || '';
+        if (qty) total += qty;
+        row.push(qty);
+      }
+
+      row.push(total);
+      row.push(entry.supplier);
+
+      const dataRow = summarySheet.addRow(row);
+      const currentRow = dataRow.number;
+
+      dataRow.eachCell((cell) => {
+        styleCell(cell, { size: 13, align: 'center' });
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+
+      // ✅ Merge Category
+      if (entry.categoryName !== lastCategory && currentRow > startMergeRow) {
+        summarySheet.mergeCells(`A${startMergeRow}:A${currentRow - 1}`);
+        startMergeRow = currentRow;
+      }
+
+      lastCategory = entry.categoryName;
+
+      if (i === sortedEntries.length - 1) {
+        summarySheet.mergeCells(`A${startMergeRow}:A${currentRow}`);
+      }
+    }
+
+    summarySheet.getColumn(1).width = 30;
+    summarySheet.getColumn(2).width = 35;
+    summarySheet.getColumn(3).width = 12;
+
+    for (let i = 4; i <= summaryHeader.length; i++) {
+      summarySheet.getColumn(i).width = 12;
     }
 
     return workbook;
@@ -902,22 +994,6 @@ export class OrderApp extends BaseApp {
   async exportOrderDetailsToExcel(orderId: string) {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('PHIẾU XUẤT KHO');
-
-    // Helper style
-    function styleCell(
-      cell: ExcelJS.Cell,
-      opts: { bold?: boolean; size?: number; align?: 'left' | 'center' | 'right' } = {},
-    ) {
-      cell.font = {
-        name: 'Times New Roman',
-        size: opts.size ?? 13,
-        bold: opts.bold ?? false,
-      };
-      cell.alignment = {
-        horizontal: opts.align ?? 'left',
-        vertical: 'middle',
-      };
-    }
 
     // Lấy order từ DB
     const order = await this.getStore().order().getOne(orderId);
