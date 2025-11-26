@@ -165,7 +165,7 @@ export class UserApp extends BaseApp {
     }
   }
 
-  async update(id: string, data: TUserUpdate, adminRole: ERole) {
+  async update(id: string, data: TUserUpdate, adminRole?: ERole) {
     try {
       const oldUser = await this.getById(id);
 
