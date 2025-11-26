@@ -44,4 +44,6 @@ export interface IUserFilter {
 export type TUserUpdate = Pick<
   IUser,
   'name' | 'email' | 'phoneNumber' | 'avatar' | 'address' | 'otp' | 'otpExpiresAt' | 'isVerified'
->;
+> & {
+  password?: string;
+};

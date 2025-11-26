@@ -1,3 +1,4 @@
+import { hash } from 'bcrypt';
 import { StatusCodes } from 'http-status-codes';
 import { ERole, IUserFilter, TUserUpdate } from 'interface';
 import { AppError, User } from 'model';
@@ -164,13 +165,19 @@ export class UserApp extends BaseApp {
     }
   }
 
-  async update(id: string, data: TUserUpdate) {
+  async update(id: string, data: TUserUpdate, adminRole: ERole) {
     try {
       const oldUser = await this.getById(id);
 
+      let password = oldUser?.password;
+
+      if (adminRole === ERole.SUPPER && data?.password && typeof data?.password === 'string') {
+        password = await hash(data.password, 12);
+      }
+
       const newData = new User({
         ...data,
-        password: oldUser?.password,
+        password,
       });
 
       const result = await this.getStore().user().updateOne(id, newData);

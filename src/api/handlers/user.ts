@@ -258,6 +258,8 @@ export async function updateUser(
 ): Promise<void> {
   try {
     const id = req.params.id as string;
+    const { password, confirmPassword } = req.body;
+    const adminRole = req.role as ERole;
 
     if (!isValidId(id)) {
       throw new AppError({
@@ -267,9 +269,26 @@ export async function updateUser(
       });
     }
 
+    if (password && confirmPassword) {
+      if (password.length < 6 || confirmPassword.length < 6)
+        throw new AppError({
+          id: `${where}.updatePasswordClient`,
+          message: 'Password must be at least 6 characters',
+          statusCode: StatusCodes?.BAD_REQUEST,
+        });
+
+      if (password !== confirmPassword) {
+        throw new AppError({
+          id: `${where}.updatePasswordClient`,
+          message: 'Mật khẩu mới và xác nhận mật khẩu không khớp',
+          statusCode: StatusCodes.BAD_REQUEST,
+        });
+      }
+    }
+
     const data = await User.validateUpdate(new User(req.body));
 
-    const result = await new UserApp(ctx).update(id, data);
+    const result = await new UserApp(ctx).update(id, data, adminRole);
 
     res.json(result);
   } catch (error) {
