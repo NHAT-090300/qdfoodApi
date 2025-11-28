@@ -117,6 +117,17 @@ export async function createAllIndexes(db: Db): Promise<void> {
         { key: { createdAt: -1 }, options: { name: 'idx_proposal_createdAt_desc' } },
       ],
     },
+
+    // 7. ORDERS
+    {
+      name: 'orders',
+      indexes: [
+        {
+          key: { userId: 1, status: 1, createdAt: -1 },
+          options: { name: 'idx_order_user_status_created' },
+        },
+      ],
+    },
   ];
 
   for (const { name, indexes } of collections) {
