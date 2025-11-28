@@ -90,7 +90,7 @@ export class User implements IUser {
       avatar: yup.string(),
       role: yup.string().oneOf(Object.values(ERole), 'Role invalid'),
       isTax: yup.boolean().default(false),
-      password: yup.string().min(6, 'Password must be at least 6 characters'),
+      password: yup.string().min(6, 'Password must be at least 6 characters').optional(),
       phoneNumber: yup.string(),
       address: yup
         .object()
