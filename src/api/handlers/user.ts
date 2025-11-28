@@ -286,7 +286,7 @@ export async function updateUser(
       }
     }
 
-    const data = await User.validateUpdate(new User(req.body));
+    const data = await User.validateUpdate(req.body);
 
     const result = await new UserApp(ctx).update(id, data, adminRole);
 
