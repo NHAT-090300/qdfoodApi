@@ -437,7 +437,9 @@ export async function updateOrderAddItems(
     }
 
     if (
-      [EOrderStatus?.CONFIRM, EOrderStatus?.PENDING, EOrderStatus?.SHIPPING].includes(order?.status)
+      ![EOrderStatus?.CONFIRM, EOrderStatus?.PENDING, EOrderStatus?.SHIPPING].includes(
+        order?.status,
+      )
     ) {
       throw new AppError({
         id: `${where}.updateOrderAddItems`,
