@@ -90,7 +90,7 @@ export function initOrder(api: API) {
   );
   api.baseRoutes.order.get('/:id', api.handler(authentication()), api.handler(handlers.getDetail));
   api.baseRoutes.order.put(
-    '/:id',
+    '/:id/add-items',
     api.handler(authentication()),
     api.handler(
       authorization({
@@ -98,8 +98,9 @@ export function initOrder(api: API) {
         permissions: [EPermission.WRITE_ORDER],
       }),
     ),
-    api.handler(handlers.updateOrder),
+    api.handler(handlers.updateOrderAddItems),
   );
+
   api.baseRoutes.order.patch(
     '/:id/isTax',
     api.handler(authentication()),

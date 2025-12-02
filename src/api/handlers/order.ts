@@ -399,6 +399,120 @@ export async function updateOrder(
     next(error);
   }
 }
+export async function updateOrderAddItems(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const orderId = req.params.id as string;
+    const { items: newItems } = req.body;
+
+    if (!orderId || !isValidId(orderId)) {
+      throw new AppError({
+        id: `${where}.updateOrderAddItems`,
+        message: 'Đơn hàng không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    if (!Array.isArray(newItems) || newItems.length === 0) {
+      throw new AppError({
+        id: `${where}.updateOrderAddItems`,
+        message: 'Vui lòng cung cấp sản phẩm để thêm',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    const orderApp = new OrderApp(ctx);
+    const order = await orderApp.getById(orderId);
+
+    if (!order) {
+      throw new AppError({
+        id: `${where}.updateOrderAddItems`,
+        message: 'Đơn hàng không tồn tại',
+        statusCode: StatusCodes.NOT_FOUND,
+      });
+    }
+
+    if (
+      [EOrderStatus?.CONFIRM, EOrderStatus?.PENDING, EOrderStatus?.SHIPPING].includes(order?.status)
+    ) {
+      throw new AppError({
+        id: `${where}.updateOrderAddItems`,
+        message: 'Trạng thái đơn hàng không được phép thêm sản phẩm',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    const productIds = newItems.map((i: any) => i.productId);
+    const products = await new ProductApp(ctx).getListByUser({
+      ids: productIds,
+      userId: String(order?.userId),
+      isShow: true,
+    });
+
+    // --- Merge items vào order.items ---
+    const updatedItems = [...order.items]; // clone current items
+
+    newItems.forEach((item: any) => {
+      const product = products.find((p) => p._id.equals(item.productId));
+      if (!product) {
+        throw new AppError({
+          id: `${where}.updateOrderAddItems`,
+          message: `Sản phẩm ${item.productId} không tồn tại`,
+          statusCode: StatusCodes.BAD_REQUEST,
+        });
+      }
+      if (!isNumber(item.quantity) || item.quantity <= 0) {
+        throw new AppError({
+          id: `${where}.updateOrderAddItems`,
+          message: 'Số lượng sản phẩm phải lớn hơn 0',
+          statusCode: StatusCodes.BAD_REQUEST,
+        });
+      }
+
+      // Kiểm tra xem product đã tồn tại trong order chưa
+      const existingItem = updatedItems.find((i) => i.productId.equals(item.productId));
+      if (existingItem) {
+        // Merge quantity
+        existingItem.quantity += item.quantity;
+      } else {
+        // Thêm mới
+        updatedItems.push({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: product.finalPrice,
+          tax: product.tax,
+          unitName: product.unitName || '',
+          damagedQuantity: 0,
+          refundAmount: 0,
+        });
+      }
+    });
+
+    // --- Tính tổng tiền và VAT mới ---
+    const total = updatedItems.reduce((sum, item) => sum + item.quantity * item.price, 0);
+    const vat = updatedItems.reduce(
+      (sum, item) => sum + (item.quantity * item.price * item.tax) / 100,
+      0,
+    );
+
+    const newOrderData = new Order({
+      ...order,
+      items: updatedItems,
+      total,
+      vat,
+    });
+
+    const updatedOrder = await orderApp.update(orderId, newOrderData);
+
+    res.json(updatedOrder);
+  } catch (error) {
+    next(error);
+  }
+}
 
 export async function updateOrderTax(
   ctx: Context,
