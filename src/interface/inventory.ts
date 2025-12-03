@@ -17,5 +17,6 @@ export interface IInventoryFilter {
   limit?: number;
   sort?: string;
   order?: ESortOrder;
-  type: EProductType;
+  type?: EProductType;
+  hasQuantity?: boolean;
 }

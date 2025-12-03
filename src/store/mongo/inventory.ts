@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes';
 import { ESortOrder, IInventory, IInventoryFilter, IOrder } from 'interface';
-import { isArray, isNumber } from 'lodash';
+import { isArray, isBoolean, isNumber } from 'lodash';
 import { AppError, Inventory } from 'model';
 import { ClientSession, Db, Decimal128, ObjectId } from 'mongodb';
 import { createUnsignedRegex } from 'utils';
@@ -56,6 +56,10 @@ export class MongoInventory extends BaseStore<IInventory> {
       condition._id = {
         $in: filters.ids.map((id) => (ObjectId.isValid(id) ? new ObjectId(id) : id)),
       };
+    }
+
+    if (filters.hasQuantity && isBoolean(filters.hasQuantity)) {
+      condition.quantity = { $gt: 0 };
     }
 
     if (filters.sort && filters.order) {

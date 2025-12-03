@@ -69,4 +69,15 @@ export function initInventory(api: API) {
     ),
     api.handler(handlers.updateInventoryQuantity),
   );
+  api.baseRoutes.inventory.patch(
+    '/list-damaged',
+    api.handler(authentication()),
+    api.handler(
+      authorization({
+        role: ERole.ADMIN,
+        permissions: [EPermission.WRITE_INVENTORY],
+      }),
+    ),
+    api.handler(handlers.updateInventoryDamagedBulk),
+  );
 }

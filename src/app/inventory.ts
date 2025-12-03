@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
 import { StatusCodes } from 'http-status-codes';
-import { IInventoryFilter, IProductLogItem } from 'interface';
-import { AppError, Inventory } from 'model';
+import { EInventoryTransactionType, IInventoryFilter, IProductLogItem } from 'interface';
+import { AppError, Inventory, InventoryTransaction } from 'model';
 import moment from 'moment';
 import { ObjectId } from 'mongodb';
 
@@ -200,29 +200,117 @@ export class InventoryApp extends BaseApp {
 
   // Kiểm tra sl nguyên liệu đầu vào
   async checkInventoryFast(ingredientItems: IProductLogItem[]) {
-    const checks = ingredientItems?.map(async (item) => {
-      const stock = await this.getStore()
-        .inventory()
-        .findOne({
-          productId: new ObjectId(item?.productId),
+    try {
+      const checks = ingredientItems?.map(async (item) => {
+        const stock = await this.getStore()
+          .inventory()
+          .findOne({
+            productId: new ObjectId(item?.productId),
+          });
+
+        if (!stock) {
+          throw new AppError({
+            id: `${where}.create`,
+            message: `Sản phẩm ${item.productId} không tồn tại trong kho`,
+            statusCode: StatusCodes.BAD_REQUEST,
+          });
+        }
+
+        if (item.quantity > stock.quantity) {
+          throw new AppError({
+            id: `${where}.create`,
+            message: `Nguyên liệu ${item.productId} vượt quá số lượng tồn kho (${stock.quantity})`,
+            statusCode: StatusCodes.BAD_REQUEST,
+          });
+        }
+      });
+      await Promise.all(checks);
+    } catch (error: any) {
+      if (error instanceof AppError) throw error;
+
+      throw new AppError({
+        id: `${where}.createMany`,
+        message: 'Cập nhật kho thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
+  }
+
+  async updateDamagedBulk(
+    updates: { id: string; damagedQuantity: number; reason?: string }[],
+    userId: string,
+  ) {
+    try {
+      const ids = updates.map((u) => u.id);
+      const inventories = await this.getList({ ids });
+
+      const now = new Date();
+      const bulkOps = [];
+      const transactionDocs = [];
+
+      for (const item of updates) {
+        const inv = inventories.find((i) => i._id.toString() === item.id);
+        if (!inv) {
+          throw new AppError({
+            id: `${where}.updateInventoryDamagedBulk`,
+            message: `Không tìm thấy sản phẩm với id ${item.id}`,
+            statusCode: StatusCodes.NOT_FOUND,
+          });
+        }
+
+        if (inv.quantity < item.damagedQuantity) {
+          throw new AppError({
+            id: `${where}.updateInventoryDamagedBulk`,
+            message: `Số lượng sản phẩm không đủ cho id ${item.id}`,
+            statusCode: StatusCodes.BAD_REQUEST,
+          });
+        }
+
+        // Gom tất cả update vào bulkOps
+        bulkOps.push({
+          updateOne: {
+            filter: { _id: inv._id },
+            update: {
+              $inc: { quantity: -item.damagedQuantity },
+              $set: { updatedAt: now },
+            },
+          },
         });
 
-      if (!stock) {
-        throw new AppError({
-          id: `${where}.create`,
-          message: `Sản phẩm ${item.productId} không tồn tại trong kho`,
-          statusCode: StatusCodes.BAD_REQUEST,
+        const transaction = await InventoryTransaction.sequelize({
+          productId: inv?.productId,
+          type: EInventoryTransactionType.DAMAGED,
+          price: 0,
+          userId,
+          note: `lý do: ${item?.reason || 'Admin cập nhật'}`,
+          quantity: Number(item?.damagedQuantity || 0),
         });
+
+        // Tạo transaction docs để insert
+        transactionDocs.push(transaction);
       }
 
-      if (item.quantity > stock.quantity) {
-        throw new AppError({
-          id: `${where}.create`,
-          message: `Nguyên liệu ${item.productId} vượt quá số lượng tồn kho (${stock.quantity})`,
-          statusCode: StatusCodes.BAD_REQUEST,
-        });
+      // Thực hiện bulk update 1 lần
+      if (bulkOps.length > 0) {
+        await this.getStore().inventory().collection.bulkWrite(bulkOps);
       }
-    });
-    await Promise.all(checks);
+
+      // Thực hiện insert transaction 1 lần
+      if (transactionDocs.length > 0) {
+        await this.getStore().inventoryTransaction().createMany(transactionDocs);
+      }
+
+      return { success: true, updatedCount: bulkOps.length };
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+
+      throw new AppError({
+        id: `${where}.createMany`,
+        message: 'Cập nhật kho thất bại',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        detail: error,
+      });
+    }
   }
 }

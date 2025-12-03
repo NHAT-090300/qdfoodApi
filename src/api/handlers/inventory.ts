@@ -5,6 +5,7 @@ import { StatusCodes } from 'http-status-codes';
 import { EInventoryTransactionType, IInventoryFilter } from 'interface';
 import { round } from 'lodash';
 import { AppError, Inventory, InventoryTransaction } from 'model';
+import { ObjectId } from 'mongodb';
 import { isValidId, tryParseJson, validatePagination } from 'utils';
 
 const where = 'Handlers.inventory';
@@ -227,6 +228,32 @@ export async function updateInventoryQuantity(
     const result = await new InventoryApp(ctx).update(id, data);
 
     await new InventoryTransactionApp(ctx).create(transaction);
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateInventoryDamagedBulk(
+  ctx: Context,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const userId = req.user?._id;
+    const updates: { id: string; damagedQuantity: number; reason?: string }[] = req.body.updates;
+
+    if (!Array.isArray(updates) || updates.length === 0) {
+      throw new AppError({
+        id: `${where}.updateInventoryDamagedBulk`,
+        message: 'Danh sách cập nhật không hợp lệ',
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    const result = await new InventoryApp(ctx).updateDamagedBulk(updates, userId);
 
     res.json(result);
   } catch (error) {
