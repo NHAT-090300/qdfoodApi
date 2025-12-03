@@ -7,6 +7,7 @@ import { EOrderStatus, EPaymentMethod, IOrderFilter, IOrderItem } from 'interfac
 import { AppError, Order } from 'model';
 import { isValidId, tryParseJson, validatePagination, validatePhone } from 'utils';
 import { isBoolean, isNumber } from 'lodash';
+import { ObjectId } from 'mongodb';
 
 const where = 'Handlers.order';
 
@@ -483,7 +484,7 @@ export async function updateOrderAddItems(
       } else {
         // Thêm mới
         updatedItems.push({
-          productId: item.productId,
+          productId: new ObjectId(item.productId),
           quantity: item.quantity,
           price: product.finalPrice,
           tax: product.tax,
